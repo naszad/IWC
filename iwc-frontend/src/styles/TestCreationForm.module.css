@@ -1,0 +1,276 @@
+.container {
+  padding: 20px;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.input, .select {
+  width: 100%;
+  padding: 10px;
+  background-color: #1a1a1a;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.button {
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #2980b9;
+}
+
+.button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+.submitButton {
+  background-color: #27ae60;
+  margin-top: 20px;
+}
+
+.submitButton:hover {
+  background-color: #219a52;
+}
+
+.questionSection {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.questionForm {
+  background-color: #252525;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.questionList {
+  background-color: #252525;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.questionPreview {
+  padding: 10px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  color: #ffffff;
+}
+
+.questionTypeForm {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+}
+
+.mediaUpload {
+  margin: 15px 0;
+}
+
+.mediaLabel {
+  display: block;
+  padding: 10px;
+  background-color: #1a1a1a;
+  border: 2px dashed #404040;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.mediaLabel:hover {
+  border-color: #3498db;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadingIndicator {
+  margin-top: 10px;
+  color: #3498db;
+  text-align: center;
+}
+
+.preview {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+}
+
+.previewImage {
+  max-width: 100%;
+  max-height: 200px;
+  display: block;
+  margin: 0 auto;
+}
+
+.previewAudio {
+  width: 100%;
+}
+
+.optionGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.radioLabel input[type="radio"] {
+  cursor: pointer;
+}
+
+.questionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.removeButton {
+  padding: 5px 10px;
+  background-color: #e74c3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.removeButton:hover {
+  background-color: #c0392b;
+}
+
+.addButton {
+  background-color: #2ecc71;
+  margin-right: 10px;
+}
+
+.addButton:hover {
+  background-color: #27ae60;
+}
+
+textarea.input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.sequenceItem {
+  background-color: #252525;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
+
+.sequenceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sequenceNumber {
+  font-size: 18px;
+  font-weight: bold;
+  color: #3498db;
+}
+
+.sequenceControls {
+  display: flex;
+  gap: 5px;
+}
+
+.moveButton {
+  padding: 5px 10px;
+  background-color: #34495e;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.moveButton:hover {
+  background-color: #2c3e50;
+}
+
+.moveButton:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+.blankSection {
+  background-color: #252525;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
+
+.blankHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #ffffff;
+}
+
+.blankAnswer {
+  margin-bottom: 15px;
+}
+
+.alternatives {
+  margin-top: 15px;
+}
+
+.alternativeGroup {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.alternativeGroup .input {
+  flex: 1;
+} 

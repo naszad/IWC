@@ -1,0 +1,73 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  padding: 20px;
+}
+
+.formWrapper {
+  background-color: #2d2d2d;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 500px;
+}
+
+.formWrapper h1 {
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2rem;
+}
+
+.roleSelector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.roleButton {
+  flex: 1;
+  padding: 10px;
+  background-color: #404040;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.roleButton:hover {
+  background-color: #505050;
+}
+
+.roleButton.active {
+  background-color: #3498db;
+}
+
+.roleButton.active:hover {
+  background-color: #2980b9;
+}
+
+.loginLink,
+.registerLink {
+  text-align: center;
+  margin-top: 20px;
+  color: #ffffff;
+}
+
+.loginLink a,
+.registerLink a {
+  color: #3498db;
+  text-decoration: none;
+  margin-left: 5px;
+}
+
+.loginLink a:hover,
+.registerLink a:hover {
+  text-decoration: underline;
+} 
