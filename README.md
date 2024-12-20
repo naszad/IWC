@@ -281,7 +281,7 @@ npm start
 cd iwc-frontend
 npm run dev
 ```
-The following command must have been run in both directories before the application will run
+*The following command must have been run in both directories before the application will run
 ```bash
 npm install
 ```
