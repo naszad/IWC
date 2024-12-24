@@ -38,7 +38,7 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 1. Backend Structure and Database
+## Backend Structure and Database
 
 ### Database Structure (PostgreSQL)
 
@@ -81,11 +81,12 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 2. Frontend Structure and Implementation
+## Frontend Structure and Implementation
 
 ### Application Architecture
 
-- Built with **React (TypeScript)** and **Vite**  
+- Built with **React (TypeScript)** and **Vite**
+- Used component library MaterialUI
 - Uses **React Router** for navigation and protected routes  
 - Context-based authentication for role-based UI control
 
@@ -118,7 +119,7 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 3. System Architecture Overview
+## System Architecture Overview
 
 ### System Services
 
@@ -139,7 +140,7 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 4. User Interface & Interaction Design
+## User Interface & Interaction Design
 
 ### Teacher and Student Interfaces
 
@@ -160,7 +161,7 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 5. Implementation Details
+## Implementation Details
 
 ### Technology Choices
 
@@ -187,7 +188,7 @@ This document provides a detailed overview of the system architecture, implement
 
 ---
 
-## 6. User Guide
+## User Guide
 
 This guide provides step-by-step instructions on how to run the application as a developer.
 
@@ -209,6 +210,7 @@ This guide provides step-by-step instructions on how to run the application as a
    DB_HOST=localhost
    DB_PORT=5432
    DB_DATABASE=postgres
+4. Leave 'locale' as default
 ```
 
 ### Backend Setup
@@ -278,6 +280,10 @@ npm start
 # Terminal 2 (Frontend)
 cd iwc-frontend
 npm run dev
+```
+*The following command must have been run in both directories before the application will run
+```bash
+npm install
 ```
 
 2. **Access the Application:**
