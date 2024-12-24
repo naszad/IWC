@@ -32,7 +32,7 @@ const TakeTest: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [startTime, setStartTime] = useState(Date.now());
+  const [startTime] = useState(Date.now());
 
   // Debug function to validate question data
   const validateQuestionData = (question: TestQuestion): BaseAnswerValidation => {

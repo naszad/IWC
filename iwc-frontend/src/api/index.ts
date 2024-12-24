@@ -221,6 +221,7 @@ export interface SequenceOrderAnswers {
 
 export interface FillInTheBlankAnswers {
   choices: string[];
+  sentence: string;
   context?: string;
 }
 

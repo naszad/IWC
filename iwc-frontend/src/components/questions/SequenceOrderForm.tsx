@@ -20,11 +20,6 @@ const SequenceOrderForm: React.FC<SequenceOrderFormProps> = ({
       ? (initialData.possible_answers as SequenceOrderAnswers).images
       : ['', '', '', '']
   );
-  const [descriptions, setDescriptions] = useState<string[]>(
-    isEditing && initialData
-      ? (initialData.possible_answers as SequenceOrderAnswers).descriptions
-      : ['', '', '', '']
-  );
   const [sequence, setSequence] = useState<string[]>(
     isEditing && initialData
       ? (initialData.possible_answers as SequenceOrderAnswers).sequence
@@ -39,16 +34,10 @@ const SequenceOrderForm: React.FC<SequenceOrderFormProps> = ({
       return;
     }
 
-    if (descriptions.some(desc => !desc.trim())) {
-      alert('Please provide all descriptions');
-      return;
-    }
-
     onSubmit({
       question_type: 'sequence_order',
       possible_answers: {
         images,
-        descriptions,
         sequence,
       },
       correct_answer: sequence.join(','),
@@ -78,22 +67,6 @@ const SequenceOrderForm: React.FC<SequenceOrderFormProps> = ({
                 <img src={image} alt={`Preview ${index + 1}`} />
               </div>
             )}
-          </div>
-        ))}
-
-        {descriptions.map((description, index) => (
-          <div key={index} className={styles.descriptionInputGroup}>
-            <label>Description {index + 1}</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => {
-                const newDescriptions = [...descriptions];
-                newDescriptions[index] = e.target.value;
-                setDescriptions(newDescriptions);
-              }}
-              placeholder={`Enter description ${index + 1}`}
-            />
           </div>
         ))}
 

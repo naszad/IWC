@@ -28,7 +28,7 @@ const FillInTheBlankForm: React.FC<FillInTheBlankFormProps> = ({
   );
   const [options, setOptions] = useState<string[]>(
     isEditing && initialData
-      ? (initialData.possible_answers as FillInTheBlankAnswers).options
+      ? (initialData.possible_answers as FillInTheBlankAnswers).choices
       : ['', '', '', '']
   );
   const [selectedCorrectIndex, setSelectedCorrectIndex] = useState<number>(

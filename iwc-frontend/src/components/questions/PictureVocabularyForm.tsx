@@ -22,7 +22,7 @@ const PictureVocabularyForm: React.FC<PictureVocabularyFormProps> = ({
   );
   const [words, setWords] = useState<string[]>(
     isEditing && initialData
-      ? (initialData.possible_answers as PictureVocabularyAnswers).words
+      ? (initialData.possible_answers as PictureVocabularyAnswers).options
       : ['', '', '', '']
   );
   const [selectedCorrectIndex, setSelectedCorrectIndex] = useState<number>(
@@ -89,8 +89,7 @@ const PictureVocabularyForm: React.FC<PictureVocabularyFormProps> = ({
       possible_answers: {
         media_url: images[0] || '',
         options: words,
-        images,
-        words,
+        images
       },
       correct_answer: words[selectedCorrectIndex],
     });

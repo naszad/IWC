@@ -17,11 +17,13 @@ export type QuestionType =
 
 export interface PictureVocabularyAnswers {
   media_url: string;
+  images: string[];
   options: string[];
 }
 
 export interface SequenceOrderAnswers {
   sequence: string[];
+  images: string[];
   media_urls?: string[];
 }
 
@@ -33,6 +35,7 @@ export interface FillInTheBlankAnswers {
 
 export interface ListeningSelectionAnswers {
   audio_url: string;
+  images: string[];
   options: string[];
 }
 
