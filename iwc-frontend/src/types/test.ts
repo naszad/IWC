@@ -28,6 +28,7 @@ export interface SequenceOrderAnswers {
 export interface FillInTheBlankAnswers {
   choices: string[];
   context?: string;
+  sentence: string;
 }
 
 export interface ListeningSelectionAnswers {
@@ -38,6 +39,7 @@ export interface ListeningSelectionAnswers {
 export interface Question {
   question_id: number;
   question_type: QuestionType;
+  question_text?: string;
   possible_answers: PictureVocabularyAnswers | SequenceOrderAnswers | FillInTheBlankAnswers | ListeningSelectionAnswers;
   correct_answer: string;
 }

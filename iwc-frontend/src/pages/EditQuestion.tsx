@@ -61,26 +61,24 @@ const EditQuestion: React.FC = () => {
 
   if (loading) {
     return (
-      <DashboardTemplate title="Edit Question" onLogout={() => navigate('/login')}>
-        <div className={styles.container}>
-          <p>Loading question...</p>
-        </div>
+      <DashboardTemplate 
+        title="Edit Question" 
+        onLogout={() => navigate('/login')}
+        role="teacher"
+      >
+        <div>Loading...</div>
       </DashboardTemplate>
     );
   }
 
   if (error || !question) {
     return (
-      <DashboardTemplate title="Edit Question" onLogout={() => navigate('/login')}>
-        <div className={styles.container}>
-          <div className={styles.error}>{error || 'Question not found'}</div>
-          <button
-            className={styles.secondaryButton}
-            onClick={handleBack}
-          >
-            Back to Test
-          </button>
-        </div>
+      <DashboardTemplate 
+        title="Edit Question" 
+        onLogout={() => navigate('/login')}
+        role="teacher"
+      >
+        <div className={styles.error}>{error || 'Question not found'}</div>
       </DashboardTemplate>
     );
   }
@@ -93,7 +91,11 @@ const EditQuestion: React.FC = () => {
   };
 
   return (
-    <DashboardTemplate title="Edit Question" onLogout={() => navigate('/login')}>
+    <DashboardTemplate 
+      title="Edit Question" 
+      onLogout={() => navigate('/login')}
+      role="teacher"
+    >
       <div className={styles.container}>
         {question.question_type === 'picture_vocabulary' && (
           <PictureVocabularyForm {...commonProps} />

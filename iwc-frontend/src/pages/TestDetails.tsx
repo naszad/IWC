@@ -1,33 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Test, Question, TestAttempt, QuestionType, PictureVocabularyAnswers, SequenceOrderAnswers, FillInTheBlankAnswers, ListeningSelectionAnswers } from '../types/test';
-import { getTestById, getTestResults, deleteTest, deleteQuestion, updateTest } from '../api/index';
+import { Test, Question } from '../types/test';
+import { getTestById, deleteTest, deleteQuestion, updateTest } from '../api/index';
 import styles from '../styles/Dashboard.module.css';
 import DashboardTemplate from '../components/templates/DashboardTemplate';
 import { useAuth } from '../context/AuthContext';
-import TestAssignments from '../components/TestAssignments';
-
-interface ExpandedQuestion {
-  index: number;
-  isExpanded: boolean;
-}
-
-const QuestionTypeLabels: Record<QuestionType, string> = {
-  picture_vocabulary: 'Picture-Based Vocabulary',
-  sequence_order: 'Sequence Order Images',
-  fill_in_the_blank: 'Fill in the Blank',
-  listening_selection: 'Listening Image Selection'
-};
 
 const TestDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [test, setTest] = useState<Test & { questions?: Question[] }>();
-  const [results, setResults] = useState<TestAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedQuestion, setExpandedQuestion] = useState<ExpandedQuestion | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTheme, setEditedTheme] = useState('');
   const [editedLevel, setEditedLevel] = useState<string>('');
@@ -39,15 +24,10 @@ const TestDetails: React.FC = () => {
       try {
         if (!id) return;
         
-        const [testData, resultsData] = await Promise.all([
-          getTestById(parseInt(id)),
-          getTestResults(parseInt(id))
-        ]);
-        
+        const testData = await getTestById(parseInt(id));
         setTest(testData);
         setEditedTheme(testData.theme);
         setEditedLevel(testData.level);
-        setResults(Array.isArray(resultsData) ? resultsData : [resultsData]);
       } catch (err) {
         setError('Failed to load test details. Please try again later.');
       } finally {
@@ -74,14 +54,14 @@ const TestDetails: React.FC = () => {
     }
   };
 
-  const handleDeleteQuestion = async (questionIndex: number) => {
+  const handleDeleteQuestion = async (questionId: number) => {
     if (!id || !window.confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
       return;
     }
 
-    setIsDeletingQuestion(questionIndex);
+    setIsDeletingQuestion(questionId);
     try {
-      const updatedTest = await deleteQuestion(parseInt(id), questionIndex);
+      const updatedTest = await deleteQuestion(parseInt(id), questionId);
       setTest(updatedTest);
     } catch (err) {
       setError('Failed to delete question. Please try again.');
@@ -115,173 +95,12 @@ const TestDetails: React.FC = () => {
     });
   };
 
-  const toggleQuestionExpand = (index: number) => {
-    setExpandedQuestion(prev => 
-      prev?.index === index && prev.isExpanded 
-        ? null 
-        : { index, isExpanded: true }
-    );
-  };
-
-  const renderPictureVocabularyQuestion = (question: Question) => {
-    const answers = question.possible_answers as PictureVocabularyAnswers;
-    return (
-      <div className={styles.questionContent}>
-        <div className={styles.imagesGrid}>
-          {answers.images.map((imageUrl, idx) => (
-            <div key={idx} className={styles.imageContainer}>
-              <img src={imageUrl} alt={`Option ${idx + 1}`} className={styles.questionImage} />
-              <p className={styles.wordOption}>
-                {answers.words[idx]}
-                {answers.words[idx] === question.correct_answer && (
-                  <span className={styles.correctBadge}> (Correct)</span>
-                )}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderSequenceOrderQuestion = (question: Question) => {
-    const answers = question.possible_answers as SequenceOrderAnswers;
-    const correctSequence = question.correct_answer.split(',');
-    
-    return (
-      <div className={styles.questionContent}>
-        <h5>Image Sequence</h5>
-        <div className={styles.sequenceGrid}>
-          {answers.images.map((imageUrl, idx) => (
-            <div key={idx} className={styles.sequenceItem}>
-              <img src={imageUrl} alt={`Sequence ${idx + 1}`} className={styles.questionImage} />
-              <p className={styles.sequenceNumber}>
-                Position in sequence: {correctSequence.indexOf(idx.toString()) + 1}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderFillInBlankQuestion = (question: Question) => {
-    const answers = question.possible_answers as FillInTheBlankAnswers;
-    
-    return (
-      <div className={styles.questionContent}>
-        <div className={styles.sentenceContainer}>
-          <h5>Sentence with Blank</h5>
-          <p className={styles.sentence}>{answers.sentence}</p>
-        </div>
-        <div className={styles.wordOptions}>
-          <h5>Word Options</h5>
-          <div className={styles.wordsList}>
-            {answers.options.map((word, idx) => (
-              <span 
-                key={idx} 
-                className={`${styles.word} ${word === question.correct_answer ? styles.correctWord : ''}`}
-              >
-                {word}
-                {word === question.correct_answer && ' (Correct)'}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderListeningQuestion = (question: Question) => {
-    const answers = question.possible_answers as ListeningSelectionAnswers;
-    
-    return (
-      <div className={styles.questionContent}>
-        <div className={styles.audioSection}>
-          <h5>Audio</h5>
-          <audio controls className={styles.audioPlayer}>
-            <source src={answers.audio_url} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-        </div>
-        <div className={styles.imagesGrid}>
-          {answers.images.map((imageUrl, idx) => (
-            <div 
-              key={idx} 
-              className={`${styles.imageContainer} ${idx.toString() === question.correct_answer ? styles.correctImage : ''}`}
-            >
-              <img src={imageUrl} alt={`Option ${idx + 1}`} className={styles.questionImage} />
-              {idx.toString() === question.correct_answer && (
-                <div className={styles.correctOverlay}>Correct Answer</div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderQuestionDetails = (question: Question, index: number) => {
-    const isExpanded = expandedQuestion?.index === index && expandedQuestion.isExpanded;
-    
-    return (
-      <div 
-        key={index} 
-        className={`${styles.questionCard} ${isExpanded ? styles.questionCardExpanded : ''}`}
-      >
-        <div className={styles.questionHeader}>
-          <div className={styles.questionHeaderLeft} onClick={() => toggleQuestionExpand(index)}>
-            <h4>Question {index + 1}</h4>
-            <span className={styles.questionType}>
-              {QuestionTypeLabels[question.question_type]}
-            </span>
-          </div>
-          {isEditing && (
-            <div className={styles.questionActions}>
-              <button
-                className={styles.editButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/edit-question/${id}/${index}`);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                className={styles.deleteButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteQuestion(index);
-                }}
-                disabled={isDeletingQuestion === index}
-              >
-                {isDeletingQuestion === index ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          )}
-        </div>
-        
-        {isExpanded && (
-          <div className={styles.questionDetails}>
-            {question.question_type === 'picture_vocabulary' && renderPictureVocabularyQuestion(question)}
-            {question.question_type === 'sequence_order' && renderSequenceOrderQuestion(question)}
-            {question.question_type === 'fill_in_the_blank' && renderFillInBlankQuestion(question)}
-            {question.question_type === 'listening_selection' && renderListeningQuestion(question)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const handleAddQuestionClick = () => {
-    navigate(`/create-question/${id}`);
-  };
-
   if (loading) {
     return (
-      <DashboardTemplate 
+      <DashboardTemplate
         title="Test Details"
-        onLogout={() => navigate('/login')}
+        onLogout={() => {/* handle logout */}}
+        role={user?.role || 'teacher'}
       >
         <div className={styles.dashboardContent}>
           <p>Loading test details...</p>
@@ -290,14 +109,35 @@ const TestDetails: React.FC = () => {
     );
   }
 
-  if (error || !test) {
+  if (error) {
     return (
-      <DashboardTemplate 
+      <DashboardTemplate
         title="Test Details"
-        onLogout={() => navigate('/login')}
+        onLogout={() => {/* handle logout */}}
+        role={user?.role || 'teacher'}
       >
         <div className={styles.dashboardContent}>
-          <p className={styles.error}>{error || 'Test not found'}</p>
+          <p className={styles.error}>{error}</p>
+          <button 
+            className={styles.secondaryButton}
+            onClick={() => navigate(-1)}
+          >
+            Go Back
+          </button>
+        </div>
+      </DashboardTemplate>
+    );
+  }
+
+  if (!test) {
+    return (
+      <DashboardTemplate
+        title="Test Details"
+        onLogout={() => {/* handle logout */}}
+        role={user?.role || 'teacher'}
+      >
+        <div className={styles.dashboardContent}>
+          <p className={styles.error}>Test not found</p>
           <button 
             className={styles.secondaryButton}
             onClick={() => navigate(-1)}
@@ -310,9 +150,10 @@ const TestDetails: React.FC = () => {
   }
 
   return (
-    <DashboardTemplate 
+    <DashboardTemplate
       title={`Test Details: ${test.theme}`}
-      onLogout={() => navigate('/login')}
+      onLogout={() => {/* handle logout */}}
+      role={user?.role || 'teacher'}
     >
       <div className={styles.dashboardContent}>
         <section className={styles.section}>
@@ -420,15 +261,16 @@ const TestDetails: React.FC = () => {
                     <div className={styles.headerActions}>
                       <button
                         className={styles.secondaryButton}
-                        onClick={() => handleEditQuestion(question.question_id)}
+                        onClick={() => navigate(`/edit-question/${id}/${question.question_id}`)}
                       >
                         Edit
                       </button>
                       <button
                         className={`${styles.secondaryButton} ${styles.deleteButton}`}
                         onClick={() => handleDeleteQuestion(question.question_id)}
+                        disabled={isDeletingQuestion === question.question_id}
                       >
-                        Delete
+                        {isDeletingQuestion === question.question_id ? 'Deleting...' : 'Delete'}
                       </button>
                     </div>
                   )}

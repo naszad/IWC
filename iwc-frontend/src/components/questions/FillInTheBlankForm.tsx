@@ -15,11 +15,12 @@ const FillInTheBlankForm: React.FC<FillInTheBlankFormProps> = ({
   initialData,
   isEditing = false,
 }) => {
-  const [context, setContext] = useState<string>(
+  const defaultValue = (
     isEditing && initialData
-      ? (initialData.possible_answers as FillInTheBlankAnswers).context
+      ? (initialData.possible_answers as FillInTheBlankAnswers).context || ''
       : ''
   );
+  const [context, setContext] = useState<string>(defaultValue);
   const [sentence, setSentence] = useState<string>(
     isEditing && initialData
       ? (initialData.possible_answers as FillInTheBlankAnswers).sentence

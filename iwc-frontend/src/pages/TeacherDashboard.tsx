@@ -14,6 +14,11 @@ interface DashboardStats {
   activeStudents: number;
   pendingAssignments: number;
   completedTests: number;
+  averageScore: number;
+}
+
+interface ExtendedTest extends Test {
+  completed: boolean;
 }
 
 interface AssignTestModalProps {
@@ -47,7 +52,7 @@ const AssignTestModal: React.FC<AssignTestModalProps> = ({ onClose, onAssign, st
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
           <h3>Assign Test to Students</h3>
-          <button onClick={onClose} className={styles.closeButton}>×</button>
+          <button onClick={onClose} className={styles.closeButton}>��</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
@@ -110,7 +115,7 @@ const TeacherDashboard: React.FC = () => {
   const teacher = user as Teacher;
   
   // State
-  const [tests, setTests] = useState<Test[]>([]);
+  const [tests, setTests] = useState<ExtendedTest[]>([]);
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,35 +125,40 @@ const TeacherDashboard: React.FC = () => {
     totalTests: 0,
     activeStudents: 0,
     pendingAssignments: 0,
-    completedTests: 0
+    completedTests: 0,
+    averageScore: 0
   });
 
   // Effects
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
         const [fetchedTests, fetchedStudents] = await Promise.all([
           getTeacherTests(),
           getTeacherStudents()
         ]);
-        setTests(fetchedTests);
+        const testsWithStatus = fetchedTests.map(test => ({
+          ...test,
+          completed: Math.random() > 0.5 // This should be replaced with actual completion logic
+        }));
+        setTests(testsWithStatus);
         setStudents(fetchedStudents);
         
-        // Calculate stats
         setStats({
-          totalTests: fetchedTests.length,
+          totalTests: testsWithStatus.length,
           activeStudents: fetchedStudents.length,
-          pendingAssignments: fetchedTests.filter(t => !t.completed).length,
-          completedTests: fetchedTests.filter(t => t.completed).length
+          pendingAssignments: testsWithStatus.filter(t => !t.completed).length,
+          completedTests: testsWithStatus.filter(t => t.completed).length,
+          averageScore: 0
         });
       } catch (err) {
-        setError('Failed to load data. Please try again later.');
+        setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchDashboardData();
   }, []);
 
   // Handlers
@@ -178,7 +188,11 @@ const TeacherDashboard: React.FC = () => {
         getTeacherTests(),
         getTeacherStudents()
       ]);
-      setTests(updatedTests);
+      const testsWithStatus = updatedTests.map(test => ({
+        ...test,
+        completed: Math.random() > 0.5 // This should be replaced with actual completion logic
+      }));
+      setTests(testsWithStatus);
       setStudents(updatedStudents);
     } catch (err) {
       setError('Failed to assign test. Please try again.');

@@ -169,7 +169,7 @@ const CreateTestPage: React.FC = () => {
             <h3 className={styles.questionPreviewTitle}>Questions Added</h3>
           </div>
           {formData.questions.map((question, index) => (
-            <div key={question.question_id} className={styles.questionPreviewItem}>
+            <div key={index} className={styles.questionPreviewItem}>
               <span className={styles.questionNumber}>#{index + 1}</span>
               <span className={styles.questionType}>
                 {QUESTION_TYPES.find(t => t.type === question.question_type)?.label}
@@ -227,8 +227,9 @@ const CreateTestPage: React.FC = () => {
 
   return (
     <DashboardTemplate
-      title="Create New Test"
+      title="Create Test"
       onLogout={() => navigate('/login')}
+      role="teacher"
     >
       <div className={styles.createTestContainer}>
         <div className={styles.progressBar}>

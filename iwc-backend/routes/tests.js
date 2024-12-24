@@ -353,51 +353,130 @@ router.get('/:id', auth, async (req, res) => {
 
 // Get test for taking
 router.get('/:id/take', auth, async (req, res) => {
+  console.log('Starting test take route:', {
+    testId: req.params.id,
+    user: {
+      id: req.user.id,
+      student_id: req.user.student_id,
+      role: req.user.role
+    }
+  });
+
   if (req.user.role !== 'student') {
+    console.log('Access denied: not a student');
     return res.status(403).json({ error: 'Access denied. Students only.' });
   }
 
   try {
+    // First check if the test exists
+    console.log('Checking if test exists...');
+    const testCheck = await pool.query(
+      'SELECT * FROM tests WHERE test_id = $1',
+      [req.params.id]
+    );
+    console.log('Test check result:', {
+      found: testCheck.rows.length > 0,
+      test: testCheck.rows[0]
+    });
+
+    if (testCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Test not found' });
+    }
+
+    // Then check if student has the right level for this test
+    console.log('Checking student level...');
+    const studentLevel = await pool.query(
+      'SELECT level FROM students WHERE student_id = $1',
+      [req.user.student_id]
+    );
+    console.log('Student level check:', {
+      studentId: req.user.student_id,
+      studentLevel: studentLevel.rows[0]?.level,
+      testLevel: testCheck.rows[0].level
+    });
+
+    if (!studentLevel.rows[0]) {
+      return res.status(404).json({ error: 'Student record not found' });
+    }
+
+    if (testCheck.rows[0].level !== studentLevel.rows[0].level) {
+      return res.status(403).json({ error: 'This test is not for your level' });
+    }
+
+    // Check for valid assignment
+    console.log('Checking test assignment...');
     const assignmentCheck = await pool.query(
-      `SELECT ta.assignment_id, ta.due_date
+      `SELECT ta.assignment_id, ta.due_date, ta.status
        FROM test_assignments ta
        WHERE ta.test_id = $1 
-       AND ta.student_id = $2 
-       AND ta.status = 'assigned'`,
-      [req.params.id, req.user.id]
+       AND ta.student_id = $2`,
+      [req.params.id, req.user.student_id]
     );
 
+    console.log('Assignment check result:', {
+      testId: req.params.id,
+      studentId: req.user.student_id,
+      found: assignmentCheck.rows.length > 0,
+      assignment: assignmentCheck.rows[0]
+    });
+
     if (assignmentCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Test not found or already completed' });
+      return res.status(404).json({ error: 'Test not found or not assigned to you' });
     }
 
     const assignment = assignmentCheck.rows[0];
 
-    if (new Date(assignment.due_date) < new Date()) {
+    // Check assignment status
+    if (assignment.status === 'completed') {
+      return res.status(403).json({ error: 'You have already completed this test' });
+    } else if (assignment.status === 'overdue') {
+      return res.status(403).json({ error: 'This test is overdue. Please contact your teacher for a new assignment.' });
+    }
+
+    // Check if test is overdue
+    if (assignment.due_date && new Date(assignment.due_date) < new Date()) {
+      console.log('Test is overdue:', {
+        dueDate: assignment.due_date,
+        currentDate: new Date()
+      });
       await pool.query(
         'UPDATE test_assignments SET status = $1 WHERE assignment_id = $2',
         ['overdue', assignment.assignment_id]
       );
-      return res.status(403).json({ error: 'Test is overdue' });
+      return res.status(403).json({ error: 'This test is past its due date. Please contact your teacher for a new assignment.' });
     }
 
+    // Get test with questions
+    console.log('Fetching test questions...');
     const testResult = await pool.query(
       `SELECT t.test_id, t.theme, t.level,
               json_agg(json_build_object(
                 'question_id', q.question_id,
-                'question_type', q.question_type,
+                'question_type', CASE 
+                  WHEN (q.possible_answers::json->>'media_url') IS NOT NULL THEN 'picture_vocabulary'
+                  WHEN (q.possible_answers::json->>'sequence') IS NOT NULL THEN 'sequence_order'
+                  WHEN (q.possible_answers::json->>'audio_url') IS NOT NULL THEN 'listening_selection'
+                  WHEN (q.possible_answers::json->>'sentence') IS NOT NULL THEN 'fill_in_the_blank'
+                  ELSE 'unknown'
+                END,
                 'possible_answers', q.possible_answers::json,
-                'correct_answer', q.correct_answer
-              ) ORDER BY q.question_id) as questions
+                'correct_answer', q.correct_answer,
+                'question_order', q.question_order
+              ) ORDER BY q.question_order) as questions
        FROM tests t
        JOIN questions q ON t.test_id = q.test_id
        WHERE t.test_id = $1
-       GROUP BY t.test_id`,
+       GROUP BY t.test_id, t.theme, t.level`,
       [req.params.id]
     );
+    console.log('Test questions result:', {
+      found: testResult.rows.length > 0,
+      questionCount: testResult.rows[0]?.questions?.length,
+      questions: testResult.rows[0]?.questions
+    });
 
     if (testResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Test not found' });
+      return res.status(404).json({ error: 'Test has no questions' });
     }
 
     const test = testResult.rows[0];
@@ -427,7 +506,7 @@ router.post('/:id/submit', auth, async (req, res) => {
        WHERE ta.assignment_id = $1 
        AND ta.student_id = $2 
        AND ta.test_id = $3`,
-      [assignment_id, req.user.id, req.params.id]
+      [assignment_id, req.user.student_id, req.params.id]
     );
 
     if (assignmentCheck.rows.length === 0) {
@@ -441,7 +520,7 @@ router.post('/:id/submit', auth, async (req, res) => {
     }
 
     const questions = await pool.query(
-      'SELECT question_id, correct_option FROM questions WHERE test_id = $1',
+      'SELECT question_id, correct_answer FROM questions WHERE test_id = $1',
       [req.params.id]
     );
 
@@ -449,20 +528,36 @@ router.post('/:id/submit', auth, async (req, res) => {
     const totalQuestions = questions.rows.length;
 
     questions.rows.forEach(question => {
-      if (answers[question.question_id] === question.correct_option) {
+      if (answers[question.question_id] === parseInt(question.correct_answer)) {
         correctCount++;
       }
     });
 
     const score = Math.round((correctCount / totalQuestions) * 100);
 
+    // Insert test attempt
     const attemptResult = await pool.query(
       `INSERT INTO student_tests 
-       (student_id, test_id, assignment_id, score, answers, time_taken, attempt_date)
-       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+       (student_id, test_id, assignment_id, score, attempt_date)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
        RETURNING *`,
-      [req.user.id, req.params.id, assignment_id, score, answers, time_taken]
+      [req.user.student_id, req.params.id, assignment_id, score]
     );
+
+    // Insert individual answers
+    for (const [questionId, givenAnswer] of Object.entries(answers)) {
+      await pool.query(
+        `INSERT INTO answers 
+         (student_test_id, question_id, given_answer, is_correct)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          attemptResult.rows[0].student_test_id,
+          parseInt(questionId),
+          givenAnswer.toString(),
+          givenAnswer === parseInt(questions.rows.find(q => q.question_id === parseInt(questionId))?.correct_answer)
+        ]
+      );
+    }
 
     await pool.query(
       'UPDATE test_assignments SET status = $1 WHERE assignment_id = $2',

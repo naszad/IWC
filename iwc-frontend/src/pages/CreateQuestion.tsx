@@ -93,8 +93,9 @@ const CreateQuestion: React.FC = () => {
 
   return (
     <DashboardTemplate
-      title="Add New Question"
+      title="Create Question"
       onLogout={() => navigate('/login')}
+      role="teacher"
     >
       <div className={styles.createTestContainer}>
         <div className={styles.progressBar}>

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardTemplate from '../components/templates/DashboardTemplate';
-import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Dashboard.module.css';
-import { Test, TestAssignment, getTeacherTests, getTeacherAssignments, deleteTest } from '../api';
+import { TestAssignment, getTeacherTests, getTeacherAssignments, deleteTest } from '../api';
+import { Test } from '../types/test';
 
 interface TestDetailsModalProps {
   test: Test;
   assignments: TestAssignment[];
   onClose: () => void;
-  onDelete: () => void;
+  onDelete: (test: Test) => Promise<void>;
 }
 
 const TestDetailsModal: React.FC<TestDetailsModalProps> = ({ test, assignments, onClose, onDelete }) => {
@@ -17,7 +17,7 @@ const TestDetailsModal: React.FC<TestDetailsModalProps> = ({ test, assignments, 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const handleDelete = async () => {
-    onDelete();
+    await onDelete(test);
     onClose();
   };
 
@@ -41,7 +41,7 @@ const TestDetailsModal: React.FC<TestDetailsModalProps> = ({ test, assignments, 
             </div>
             <div className={styles.detailItem}>
               <span className={styles.detailLabel}>Questions</span>
-              <span className={styles.detailValue}>{test.question_count}</span>
+              <span className={styles.detailValue}>{test.questions?.length || 0}</span>
             </div>
             <div className={styles.detailItem}>
               <span className={styles.detailLabel}>Created</span>
@@ -127,7 +127,6 @@ const TestDetailsModal: React.FC<TestDetailsModalProps> = ({ test, assignments, 
 };
 
 const TestsPage: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [tests, setTests] = useState<Test[]>([]);
   const [assignments, setAssignments] = useState<TestAssignment[]>([]);
@@ -157,19 +156,16 @@ const TestsPage: React.FC = () => {
   }, []);
 
   const handleTestClick = (test: Test) => {
-    const testAssignments = assignments.filter(a => a.test_id === test.test_id);
     setSelectedTest(test);
   };
 
-  const handleDeleteTest = async () => {
-    if (!selectedTest) return;
-
+  const handleDeleteTest = async (test: Test) => {
     try {
-      await deleteTest(selectedTest.test_id);
-      setTests(tests.filter(t => t.test_id !== selectedTest.test_id));
+      await deleteTest(test.test_id);
+      setTests(tests.filter(t => t.test_id !== test.test_id));
       setSelectedTest(null);
     } catch (err) {
-      setError('Failed to delete test. Please try again.');
+      setError('Failed to delete test');
     }
   };
 
@@ -281,7 +277,7 @@ const TestsPage: React.FC = () => {
                       </div>
                       <div className={styles.statItem}>
                         <span className={styles.statLabel}>Questions</span>
-                        <span className={styles.statValue}>{test.question_count}</span>
+                        <span className={styles.statValue}>{test.questions?.length || 0}</span>
                       </div>
                       <div className={styles.statItem}>
                         <span className={styles.statLabel}>Assignments</span>

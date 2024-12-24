@@ -34,7 +34,8 @@ const StudentDashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -90,9 +91,16 @@ const StudentDashboard: React.FC = () => {
                         {assignment.status !== 'completed' && (
                           <button
                             className={styles.primaryButton}
-                            onClick={() => navigate(`/test/${assignment.test_id}/take`)}
+                            onClick={() => {
+                              try {
+                                navigate(`/test/${assignment.test_id}/take`);
+                              } catch (err) {
+                                setError('Failed to load test. Please try again.');
+                              }
+                            }}
+                            disabled={loading}
                           >
-                            Take Test
+                            {loading ? 'Loading...' : 'Take Test'}
                           </button>
                         )}
                       </div>
