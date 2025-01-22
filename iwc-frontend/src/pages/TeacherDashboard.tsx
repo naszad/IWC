@@ -27,6 +27,29 @@ interface AssignTestModalProps {
   students: StudentInfo[];
 }
 
+// Helper Functions
+const getLevelClass = (level: string): string => {
+  switch (level.toUpperCase()) {
+    case 'A':
+      return styles.levelA;
+    case 'B':
+      return styles.levelB;
+    case 'C':
+      return styles.levelC;
+    case 'D':
+      return styles.levelD;
+    default:
+      return styles.levelA;
+  }
+};
+
+const getPerformanceClass = (score: number): string => {
+  if (score >= 90) return styles.excellentPerformance;
+  if (score >= 75) return styles.goodPerformance;
+  if (score >= 60) return styles.averagePerformance;
+  return styles.needsImprovement;
+};
+
 // Components
 const StatsCard: React.FC<{ title: string; value: number; icon: string }> = ({ title, value, icon }) => (
   <div className={styles.statsCard}>
@@ -212,7 +235,7 @@ const TeacherDashboard: React.FC = () => {
     <DashboardTemplate
       title={`Welcome, ${teacher.full_name}`}
       onLogout={handleLogout}
-      role="teacher"  // Pass role prop
+      role="teacher"
     >
       <div className={styles.dashboardContent}>
         {/* Stats Section */}
@@ -248,62 +271,35 @@ const TeacherDashboard: React.FC = () => {
             </div>
           )}
           
-          {error && (
-            <div className={styles.error}>
-              <span className={styles.errorIcon}>⚠️</span>
-              {error}
-            </div>
-          )}
+          {error && <div className={styles.error}>{error}</div>}
           
           {!loading && !error && (
             <div className={styles.cardGrid}>
               {tests.length === 0 ? (
                 <div className={styles.emptyState}>
                   <span className={styles.emptyIcon}>📝</span>
-                  <h3>No tests created yet</h3>
-                  <p>Start by creating your first test!</p>
-                  <button 
-                    className={styles.primaryButton}
-                    onClick={handleCreateTest}
-                  >
-                    Create Test
-                  </button>
+                  <h3>No Tests Created</h3>
+                  <p>Start by creating your first test</p>
                 </div>
               ) : (
-                tests.map((test) => (
+                tests.map(test => (
                   <div key={test.test_id} className={styles.card}>
                     <div className={styles.cardHeader}>
                       <h3>{test.theme}</h3>
-                      <span className={test.completed ? styles.successBadge : styles.warningBadge}>
+                      <span className={`${styles.badge} ${test.completed ? styles.successBadge : styles.warningBadge}`}>
                         {test.completed ? 'Completed' : 'Active'}
                       </span>
                     </div>
                     <div className={styles.cardContent}>
-                      <div className={styles.testInfo}>
-                        <span>
-                          <span className={styles.infoIcon}>📊</span>
-                          Level {test.level}
-                        </span>
-                        <span>
-                          <span className={styles.infoIcon}>📅</span>
-                          {formatDate(test.created_at)}
-                        </span>
-                      </div>
+                      <p>Level: {test.level}</p>
+                      <p>Created: {formatDate(test.created_at)}</p>
                     </div>
                     <div className={styles.cardActions}>
-                      <button 
-                        onClick={() => handleAssignClick(test.test_id)}
+                      <button
                         className={styles.secondaryButton}
+                        onClick={() => handleAssignClick(test.test_id)}
                       >
-                        <span className={styles.buttonIcon}>👥</span>
-                        Assign
-                      </button>
-                      <button 
-                        onClick={() => navigate(`/test/${test.test_id}`)}
-                        className={styles.primaryButton}
-                      >
-                        <span className={styles.buttonIcon}>👁️</span>
-                        View Details
+                        Assign to Students
                       </button>
                     </div>
                   </div>
@@ -313,29 +309,92 @@ const TeacherDashboard: React.FC = () => {
           )}
         </section>
 
-        {/* Student Management Section */}
+        {/* Students Section */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitle}>
-              <h2>Student Management</h2>
-              <p className={styles.sectionSubtitle}>Manage your students and their progress</p>
+              <h2>Your Students</h2>
+              <p className={styles.sectionSubtitle}>Monitor student progress and performance</p>
+            </div>
+            <div className={styles.headerActions}>
+              <button 
+                className={styles.primaryButton}
+                onClick={() => navigate('/students')}
+              >
+                <span className={styles.buttonIcon}>👥</span>
+                View All Students
+              </button>
             </div>
           </div>
-          <StudentManagement />
+          
+          {loading && (
+            <div className={styles.loading}>
+              <div className={styles.spinner}></div>
+              <p>Loading students...</p>
+            </div>
+          )}
+          
+          {error && <div className={styles.error}>{error}</div>}
+          
+          {!loading && !error && (
+            <div className={styles.cardGrid}>
+              {students.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <span className={styles.emptyIcon}>👥</span>
+                  <h3>No Students Yet</h3>
+                  <p>Students will appear here once they join your class</p>
+                </div>
+              ) : (
+                students.slice(0, 4).map(student => (
+                  <div key={student.student_id} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      <h3>{student.full_name}</h3>
+                      <span className={`${styles.levelBadge} ${getLevelClass(student.level)}`}>
+                        Level {student.level}
+                      </span>
+                    </div>
+                    <div className={styles.cardContent}>
+                      <div className={styles.studentStats}>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Tests Taken</span>
+                          <span className={styles.statValue}>{student.tests_taken}</span>
+                        </div>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Average Score</span>
+                          <span className={`${styles.statValue} ${getPerformanceClass(student.average_score)}`}>
+                            {student.average_score}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              {students.length > 4 && (
+                <div className={styles.card + ' ' + styles.viewMoreCard}>
+                  <div className={styles.viewMoreContent}>
+                    <p>+{students.length - 4} more students</p>
+                    <button 
+                      className={styles.secondaryButton}
+                      onClick={() => navigate('/students')}
+                    >
+                      View All Students
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
-
-        {/* Modal */}
-        {showAssignModal && (
-          <AssignTestModal
-            onClose={() => {
-              setShowAssignModal(false);
-              setSelectedTestId(null);
-            }}
-            onAssign={handleAssignTest}
-            students={students}
-          />
-        )}
       </div>
+
+      {showAssignModal && (
+        <AssignTestModal
+          onClose={() => setShowAssignModal(false)}
+          onAssign={handleAssignTest}
+          students={students}
+        />
+      )}
     </DashboardTemplate>
   );
 };
