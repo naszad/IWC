@@ -39,8 +39,11 @@ const ProtectedRoute: React.FC<{
 
 // Dashboard redirect component
 const DashboardRedirect: React.FC = () => {
-  const { user } = useAuth();
-  return <Navigate to={`/${user?.role}/dashboard`} replace />;
+  const { user, isAuthenticated } = useAuth();
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+  return <Navigate to={`/${user.role}/dashboard`} replace />;
 };
 
 const App: React.FC = () => {
