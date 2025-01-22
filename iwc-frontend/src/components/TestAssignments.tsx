@@ -194,7 +194,9 @@ const TestAssignments: React.FC<TestAssignmentsProps> = ({ testId }) => {
                 </div>
               </div>
               <div className={styles.assignmentInfo}>
-                <span>Assigned: {formatDate(assignment.assigned_at)}</span>
+                <span data-testid="assignment-date">
+                  Assigned: {formatDate(assignment.assigned_at)}
+                </span>
                 {assignment.due_date && (
                   <span>Due: {formatDate(assignment.due_date)}</span>
                 )}

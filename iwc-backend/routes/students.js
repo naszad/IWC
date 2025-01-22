@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const auth = require('../middleware/auth');
+const db = require('../db');
 
 // Middleware to check if user is a teacher
 const isTeacher = (req, res, next) => {
@@ -96,6 +97,42 @@ router.get('/student-progress/:studentId', auth, isTeacher, async (req, res) => 
   } catch (error) {
     console.error('Error fetching student progress:', error);
     res.status(500).json({ error: 'Server error while fetching student progress' });
+  }
+});
+
+// GET all students
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM students');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching students:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST new student
+router.post('/', async (req, res) => {
+  const { name, email } = req.body;
+
+  // Basic validation
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+
+  if (!email.includes('@')) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  try {
+    const result = await db.query(
+      'INSERT INTO students (name, email) VALUES ($1, $2) RETURNING *',
+      [name, email]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating student:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
