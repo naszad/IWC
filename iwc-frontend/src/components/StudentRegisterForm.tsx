@@ -34,7 +34,7 @@ const StudentRegisterForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form onSubmit={handleSubmit} className={styles.form} role="form">
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.formGroup}>
@@ -113,4 +113,4 @@ const StudentRegisterForm: React.FC = () => {
   );
 };
 
-export default StudentRegisterForm; 
+export default StudentRegisterForm;

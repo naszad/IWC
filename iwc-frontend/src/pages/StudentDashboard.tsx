@@ -77,7 +77,7 @@ const StudentDashboard: React.FC = () => {
         setStats({
           totalAssignments: data.length,
           completedAssignments: completed,
-          pendingAssignments: data.filter(a => a.status === 'pending').length,
+          pendingAssignments: data.filter(a => a.status === 'assigned').length, // Changed 'pending' to 'assigned'
           averageScore
         });
       } catch (err) {

@@ -7,21 +7,25 @@ const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       await login(username, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
-      {error && <div className={styles.error}>{error}</div>}
+    <form onSubmit={handleSubmit} className={styles.form} role="form">
+      {error && <div role="alert" className={styles.error}>{error}</div>}
       
       <div className={styles.formGroup}>
         <label htmlFor="username">Username</label>
@@ -47,11 +51,11 @@ const LoginForm: React.FC = () => {
         />
       </div>
 
-      <button type="submit" className={styles.button}>
-        Login
+      <button type="submit" className={styles.button} disabled={isLoading}>
+        {isLoading ? 'Logging in...' : 'Login'}
       </button>
     </form>
   );
 };
 
-export default LoginForm; 
+export default LoginForm;

@@ -10,8 +10,7 @@ export default {
     '^.+\\.(ts|tsx)$': 'ts-jest'
   },
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
-    '<rootDir>/src/**/*.{spec,test}.{ts,tsx}'
+    '<rootDir>/tests/**/*.{ts,tsx}'
   ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

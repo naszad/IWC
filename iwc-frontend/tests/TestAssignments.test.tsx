@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import TestAssignments from '../TestAssignments';
+import TestAssignments from '../src/components/TestAssignments';
 
 // Mock the API calls
-jest.mock('../../api', () => ({
+jest.mock('../src/api', () => ({
   getTeacherAssignments: jest.fn(() => Promise.resolve([
     {
       assignment_id: 1,
@@ -51,7 +51,7 @@ describe('TestAssignments Component', () => {
   });
 
   it('handles empty assignments list', async () => {
-    const { getTeacherAssignments } = require('../../api');
+    const { getTeacherAssignments } = require('../src/api');
     (getTeacherAssignments as jest.Mock).mockResolvedValueOnce([]);
     
     renderComponent();
@@ -62,7 +62,7 @@ describe('TestAssignments Component', () => {
   });
 
   it('handles error state', async () => {
-    const { getTeacherAssignments } = require('../../api');
+    const { getTeacherAssignments } = require('../src/api');
     (getTeacherAssignments as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
     
     renderComponent();

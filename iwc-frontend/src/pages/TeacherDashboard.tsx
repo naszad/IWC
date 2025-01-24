@@ -6,7 +6,6 @@ import styles from '../styles/Dashboard.module.css';
 import DashboardTemplate from '../components/templates/DashboardTemplate';
 import { getTeacherTests, getTeacherStudents, assignTest, StudentInfo } from '../api/index';
 import { Test } from '../types/test';
-import StudentManagement from '../components/StudentManagement';
 
 // Types
 interface DashboardStats {

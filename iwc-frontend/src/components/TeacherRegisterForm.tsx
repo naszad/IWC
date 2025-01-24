@@ -12,9 +12,19 @@ const TeacherRegisterForm: React.FC = () => {
   });
   const [error, setError] = useState('');
 
+  const validateEmail = (email: string): boolean => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateEmail(formData.email)) {
+      setError('Invalid email format');
+      return;
+    }
 
     try {
       await registerTeacher(formData);
@@ -32,8 +42,12 @@ const TeacherRegisterForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
-      {error && <div className={styles.error}>{error}</div>}
+    <form onSubmit={handleSubmit} className={styles.form} role="form" noValidate>
+      {error && (
+        <div role="alert">
+          {error}
+        </div>
+      )}
 
       <div className={styles.formGroup}>
         <label htmlFor="username">Username</label>
@@ -94,4 +108,4 @@ const TeacherRegisterForm: React.FC = () => {
   );
 };
 
-export default TeacherRegisterForm; 
+export default TeacherRegisterForm;
