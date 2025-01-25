@@ -6,18 +6,23 @@ import { BrowserRouter } from 'react-router-dom';
 import StudentRegisterForm from '../../src/components/StudentRegisterForm';
 import { AuthProvider } from '../../src/context/AuthContext';
 import { registerStudent } from '../../src/api';
+import { AuthResponse } from '../../src/types/auth-response';
+import { Student } from '../../src/types/user';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mock the API module
-jest.mock('../../src/api', () => ({
-  registerStudent: jest.fn()
-}));
+jest.mock('../../src/api');
+const mockRegisterStudent = jest.mocked(registerStudent);
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
-}));
+jest.mock('react-router-dom', () => {
+  const actualModule = jest.requireActual('react-router-dom') as object;
+  return {
+    ...actualModule,
+    useNavigate: () => mockNavigate
+  };
+});
 
 describe('StudentRegisterForm', () => {
   const validFormData = {
@@ -26,6 +31,18 @@ describe('StudentRegisterForm', () => {
     full_name: 'Test User',
     language: 'English',
     level: 'B'
+  };
+
+  const mockRegisterResponse: AuthResponse = {
+    token: 'fake-token',
+    user: {
+      id: 1,
+      username: 'newuser',
+      role: 'student',
+      full_name: 'New User',
+      language: 'en',
+      level: 'A'
+    } as Student
   };
 
   const renderForm = () => {
@@ -85,16 +102,7 @@ describe('StudentRegisterForm', () => {
   });
 
   it('handles successful registration', async () => {
-    const mockRegisterResponse = {
-      token: 'fake-token',
-      user: {
-        id: 1,
-        username: validFormData.username,
-        role: 'student'
-      }
-    };
-
-    (registerStudent as jest.Mock).mockResolvedValueOnce(mockRegisterResponse);
+    mockRegisterStudent.mockResolvedValueOnce(mockRegisterResponse);
     
     renderForm();
     
@@ -111,7 +119,7 @@ describe('StudentRegisterForm', () => {
     });
     
     // Verify API was called with correct data
-    expect(registerStudent).toHaveBeenCalledWith(validFormData);
+    expect(mockRegisterStudent).toHaveBeenCalledWith(validFormData);
     
     // Verify no error message is shown
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -119,7 +127,7 @@ describe('StudentRegisterForm', () => {
 
   it('handles duplicate username error', async () => {
     const errorMessage = 'Username already exists';
-    (registerStudent as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    mockRegisterStudent.mockRejectedValueOnce(new Error(errorMessage));
     
     renderForm();
     
@@ -141,7 +149,7 @@ describe('StudentRegisterForm', () => {
 
   describe('password requirements', () => {
     const testPasswordRequirement = async (password: string, expectedError: string) => {
-      (registerStudent as jest.Mock).mockRejectedValueOnce(new Error(expectedError));
+      mockRegisterStudent.mockRejectedValueOnce(new Error(expectedError));
       
       renderForm();
       
@@ -183,12 +191,9 @@ describe('StudentRegisterForm', () => {
 
   it('clears error message when form is resubmitted', async () => {
     const errorMessage = 'Username already exists';
-    (registerStudent as jest.Mock)
+    mockRegisterStudent
       .mockRejectedValueOnce(new Error(errorMessage))
-      .mockResolvedValueOnce({
-        token: 'fake-token',
-        user: { id: 1, username: 'newuser', role: 'student' }
-      });
+      .mockResolvedValueOnce(mockRegisterResponse);
     
     renderForm();
     

@@ -6,18 +6,23 @@ import { BrowserRouter } from 'react-router-dom';
 import TeacherRegisterForm from '../../src/components/TeacherRegisterForm';
 import { AuthProvider } from '../../src/context/AuthContext';
 import { registerTeacher } from '../../src/api';
+import { AuthResponse } from '../../src/types/auth-response';
+import { Teacher } from '../../src/types/user';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mock the API module
-jest.mock('../../src/api', () => ({
-  registerTeacher: jest.fn()
-}));
+jest.mock('../../src/api');
+const mockRegisterTeacher = jest.mocked(registerTeacher);
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
-}));
+jest.mock('react-router-dom', () => {
+  const actualModule = jest.requireActual('react-router-dom') as object;
+  return {
+    ...actualModule,
+    useNavigate: () => mockNavigate
+  };
+});
 
 describe('TeacherRegisterForm', () => {
   const validFormData = {
@@ -25,6 +30,17 @@ describe('TeacherRegisterForm', () => {
     password: 'Password123!',
     full_name: 'Teacher User',
     email: 'teacher@example.com'
+  };
+
+  const mockRegisterResponse: AuthResponse = {
+    token: 'fake-token',
+    user: {
+      id: 1,
+      username: 'newteacher',
+      role: 'teacher',
+      full_name: 'New Teacher',
+      email: 'teacher@example.com'
+    } as Teacher
   };
 
   const renderForm = () => {
@@ -82,16 +98,7 @@ describe('TeacherRegisterForm', () => {
   });
 
   it('handles successful registration', async () => {
-    const mockRegisterResponse = {
-      token: 'fake-token',
-      user: {
-        id: 1,
-        username: validFormData.username,
-        role: 'teacher'
-      }
-    };
-
-    (registerTeacher as jest.Mock).mockResolvedValueOnce(mockRegisterResponse);
+    mockRegisterTeacher.mockResolvedValueOnce(mockRegisterResponse);
     
     renderForm();
     
@@ -107,7 +114,7 @@ describe('TeacherRegisterForm', () => {
     });
     
     // Verify API was called with correct data
-    expect(registerTeacher).toHaveBeenCalledWith(validFormData);
+    expect(mockRegisterTeacher).toHaveBeenCalledWith(validFormData);
     
     // Verify no error message is shown
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -115,7 +122,7 @@ describe('TeacherRegisterForm', () => {
 
   it('handles duplicate username error', async () => {
     const errorMessage = 'Username already exists';
-    (registerTeacher as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    mockRegisterTeacher.mockRejectedValueOnce(new Error(errorMessage));
     
     renderForm();
     
@@ -136,7 +143,7 @@ describe('TeacherRegisterForm', () => {
 
   describe('password requirements', () => {
     const testPasswordRequirement = async (password: string, expectedError: string) => {
-      (registerTeacher as jest.Mock).mockRejectedValueOnce(new Error(expectedError));
+      mockRegisterTeacher.mockRejectedValueOnce(new Error(expectedError));
       
       renderForm();
       
@@ -186,7 +193,7 @@ describe('TeacherRegisterForm', () => {
     await user.type(screen.getByLabelText(/email/i), 'teacher@example.com');
 
     // Mock first submission to fail with username error
-    (registerTeacher as jest.Mock).mockRejectedValueOnce(new Error(firstErrorMessage));
+    mockRegisterTeacher.mockRejectedValueOnce(new Error(firstErrorMessage));
 
     // Submit form first time
     const submitButton = screen.getByRole('button', { name: /register/i });
@@ -204,18 +211,7 @@ describe('TeacherRegisterForm', () => {
     await user.type(screen.getByLabelText(/username/i), 'newteacheruser');
 
     // Mock second submission to succeed
-    (registerTeacher as jest.Mock).mockResolvedValueOnce({ 
-      token: 'fake-token',
-      user: { 
-        id: 1, 
-        username: 'newteacheruser', 
-        full_name: 'Teacher User', 
-        email: 'teacher@example.com',
-        role: 'teacher' as const,
-        teacher_id: 1,
-        created_at: new Date().toISOString()
-      }
-    });
+    mockRegisterTeacher.mockResolvedValueOnce(mockRegisterResponse);
 
     // Submit form second time
     await user.click(submitButton);
@@ -243,6 +239,6 @@ describe('TeacherRegisterForm', () => {
     expect(errorElement).toHaveTextContent(errorMessage);
 
     // Ensure registerTeacher is not called due to validation failure
-    expect(registerTeacher).not.toHaveBeenCalled();
+    expect(mockRegisterTeacher).not.toHaveBeenCalled();
   });
 });

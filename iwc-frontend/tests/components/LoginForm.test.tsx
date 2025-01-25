@@ -6,20 +6,37 @@ import { BrowserRouter } from 'react-router-dom';
 import LoginForm from '../../src/components/LoginForm';
 import { AuthProvider } from '../../src/context/AuthContext';
 import { login } from '../../src/api';
+import { AuthResponse } from '../../src/types/auth-response';
+import { Student } from '../../src/types/user';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-// Mock the API module
-jest.mock('../../src/api', () => ({
-  login: jest.fn()
-}));
+// Mock the API module with typed mock function
+jest.mock('../../src/api');
+const mockLogin = jest.mocked(login);
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
-}));
+jest.mock('react-router-dom', () => {
+  const actualModule = jest.requireActual('react-router-dom') as object;
+  return {
+    ...actualModule,
+    useNavigate: () => mockNavigate
+  };
+});
 
 describe('LoginForm', () => {
+  const mockLoginResponse: AuthResponse = {
+    token: 'fake-token',
+    user: {
+      id: 1,
+      username: 'testuser',
+      role: 'student',
+      full_name: 'Test User',
+      language: 'en',
+      level: 'A'
+    } as Student
+  };
+
   const renderLoginForm = () => {
     render(
       <BrowserRouter>
@@ -60,16 +77,7 @@ describe('LoginForm', () => {
   });
 
   it('handles successful login', async () => {
-    const mockLoginResponse = {
-      token: 'fake-token',
-      user: {
-        id: 1,
-        username: 'testuser',
-        role: 'student'
-      }
-    };
-
-    (login as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
+    mockLogin.mockResolvedValueOnce(mockLoginResponse);
     
     renderLoginForm();
     
@@ -83,7 +91,7 @@ describe('LoginForm', () => {
     });
     
     // Verify API was called with correct credentials
-    expect(login).toHaveBeenCalledWith('testuser', 'password123');
+    expect(mockLogin).toHaveBeenCalledWith('testuser', 'password123');
     
     // Verify no error message is shown
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -91,7 +99,7 @@ describe('LoginForm', () => {
 
   it('handles failed login attempt', async () => {
     const errorMessage = 'Invalid credentials';
-    (login as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    mockLogin.mockRejectedValueOnce(new Error(errorMessage));
     
     renderLoginForm();
     
@@ -112,12 +120,9 @@ describe('LoginForm', () => {
 
   it('clears error message when form is resubmitted', async () => {
     const errorMessage = 'Invalid credentials';
-    (login as jest.Mock)
+    mockLogin
       .mockRejectedValueOnce(new Error(errorMessage))
-      .mockResolvedValueOnce({
-        token: 'fake-token',
-        user: { id: 1, username: 'testuser', role: 'student' }
-      });
+      .mockResolvedValueOnce(mockLoginResponse);
     
     renderLoginForm();
     
@@ -148,8 +153,10 @@ describe('LoginForm', () => {
 
   it('prevents multiple submissions while login is in progress', async () => {
     // Create a delayed mock response
-    const loginPromise = new Promise(resolve => setTimeout(resolve, 500));
-    (login as jest.Mock).mockImplementationOnce(() => loginPromise);
+    const loginPromise = new Promise<AuthResponse>(resolve => 
+      setTimeout(() => resolve(mockLoginResponse), 500)
+    );
+    mockLogin.mockImplementationOnce(() => loginPromise);
     
     renderLoginForm();
     
@@ -181,6 +188,6 @@ describe('LoginForm', () => {
     });
     
     // Verify login was only called once
-    expect(login).toHaveBeenCalledTimes(1);
+    expect(mockLogin).toHaveBeenCalledTimes(1);
   });
 }); 

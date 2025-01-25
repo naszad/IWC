@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
-
+import '@testing-library/jest-dom/extend-expect';
+import { jest } from '@jest/globals';
 // TextEncoder/TextDecoder polyfills
 class CustomTextEncoder {
   encode(input: string): Uint8Array {

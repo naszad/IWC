@@ -1,27 +1,42 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import TestAssignments from '../src/components/TestAssignments';
+import { getTeacherAssignments, getTeacherStudents } from '../src/api';
+import { AssignmentStatus } from '../src/api';
+import { StudentLevel } from '../src/types/user';
+import { jest, describe, it, expect } from '@jest/globals';
 
 // Mock the API calls
-jest.mock('../src/api', () => ({
-  getTeacherAssignments: jest.fn(() => Promise.resolve([
-    {
-      assignment_id: 1,
-      test_id: 1,
-      student_name: 'Math Test',
-      assigned_at: '2024-03-20T20:00:00.000Z',
-      status: 'pending',
-      score: 0
-    }
-  ])),
-  getTeacherStudents: jest.fn(() => Promise.resolve([
-    {
-      student_id: 1,
-      full_name: 'Test Student',
-      level: 'Beginner'
-    }
-  ]))
-}));
+jest.mock('../src/api');
+const mockGetTeacherAssignments = jest.mocked(getTeacherAssignments);
+const mockGetTeacherStudents = jest.mocked(getTeacherStudents);
+
+// Setup initial mock implementations
+mockGetTeacherAssignments.mockResolvedValue([{
+  assignment_id: 1,
+  test_id: 1,
+  student_id: 1,
+  teacher_id: 1,
+  student_name: 'Math Test',
+  assigned_at: '2024-03-20T20:00:00.000Z',
+  due_date: null,
+  status: 'assigned' as AssignmentStatus,
+  theme: 'Math',
+  level: 'A' as StudentLevel,
+  student_language: 'en',
+  score: 0,
+  attempt_date: null
+}]);
+
+mockGetTeacherStudents.mockResolvedValue([{
+  student_id: 1,
+  full_name: 'Test Student',
+  language: 'en',
+  level: 'A' as StudentLevel,
+  created_at: '2024-03-20T20:00:00.000Z',
+  tests_taken: 0,
+  average_score: 0
+}]);
 
 describe('TestAssignments Component', () => {
   const renderComponent = () => {
@@ -51,8 +66,7 @@ describe('TestAssignments Component', () => {
   });
 
   it('handles empty assignments list', async () => {
-    const { getTeacherAssignments } = require('../src/api');
-    (getTeacherAssignments as jest.Mock).mockResolvedValueOnce([]);
+    mockGetTeacherAssignments.mockResolvedValueOnce([]);
     
     renderComponent();
     
@@ -62,8 +76,7 @@ describe('TestAssignments Component', () => {
   });
 
   it('handles error state', async () => {
-    const { getTeacherAssignments } = require('../src/api');
-    (getTeacherAssignments as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
+    mockGetTeacherAssignments.mockRejectedValueOnce(new Error('Failed to fetch'));
     
     renderComponent();
     
