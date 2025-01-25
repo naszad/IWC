@@ -479,7 +479,7 @@ describe('Your Route', () => {
 2. **Frontend Component Test**
 ```bash
 # Create new test file
-touch iwc-frontend/src/components/__tests__/YourComponent.test.tsx
+touch iwc-frontend/tests/components/YourComponent.test.tsx
 
 # Basic test structure
 import { render, screen } from '@testing-library/react';
@@ -531,172 +531,68 @@ npm run test:ci
 
 ## Testing Documentation
 
-### Overview
-The application uses Jest as the primary testing framework for both frontend and backend, with additional tools specific to each:
+The project implements comprehensive testing strategies for both frontend and backend components.
 
-#### Frontend Testing Stack
-- Jest: Main testing framework
-- React Testing Library: Component testing
-- MSW (Mock Service Worker): API mocking
-- jest-dom: DOM testing utilities
+### Frontend Testing Architecture
 
-#### Backend Testing Stack
-- Jest: Main testing framework
-- Supertest: HTTP assertions
-- Jest mocking: Database and service mocks
+The frontend testing suite uses the following technologies:
+- **Jest**: Main testing framework
+- **React Testing Library**: For testing React components
+- **@testing-library/user-event**: For simulating user interactions
+- **jest-dom**: For DOM-specific assertions
 
-### Test Structure
+#### Test Organization
+- Tests are located in the `iwc-frontend/tests` directory
+  - Component tests are in `iwc-frontend/tests/components`
+  - Main test files are in the root of the tests directory (e.g., `TestAssignments.test.tsx`)
+- Each test file follows the naming pattern `*.test.tsx`
+- Tests are organized by component and feature
 
-#### Frontend Tests
-Located in `iwc-frontend/src/components/__tests__/` and `iwc-frontend/src/pages/__tests__/`
-
+#### Key Testing Patterns
 1. **Component Tests**
-   - Render testing
-   - User interaction
-   - State changes
-   - Props validation
-   - Error handling
+   - Render testing with proper context providers
+   - User interaction simulation
+   - Async operation handling
+   - Form validation testing
+   - Error state verification
 
-Example of a component test:
-```typescript
-describe('TestAssignments Component', () => {
-  it('renders loading state and then assignments list', async () => {
-    // Test loading state
-    expect(screen.getByText('Loading assignments...')).toBeInTheDocument();
-    
-    // Test loaded content
-    await waitFor(() => {
-      expect(screen.getByText('Math Test')).toBeInTheDocument();
-    });
-  });
-});
-```
+2. **Mock Implementations**
+   - API calls are mocked using Jest's mock functions
+   - Properly typed mock responses using TypeScript
+   - Browser APIs (TextEncoder, IntersectionObserver) are polyfilled
 
-2. **Integration Tests**
-   - API integration
-   - Component interaction
-   - Route navigation
-   - Data flow
-
-#### Backend Tests
-Located in `iwc-backend/tests/`
-
-1. **API Route Tests**
-   - Endpoint validation
-   - Request/response handling
-   - Error scenarios
-   - Authentication/Authorization
-
-2. **Database Tests**
-   - Query testing
-   - Data integrity
-   - Transaction handling
-
-Example of a backend test:
-```javascript
-describe('Student Routes', () => {
-  it('should return all students', async () => {
-    const response = await request(app)
-      .get('/api/students')
-      .expect(200);
-    
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].name).toBe('Test Student');
-  });
-});
-```
+3. **Test Setup**
+   - Global setup in `setupTests.ts`
+   - Common test utilities and fixtures
+   - Environment polyfills for browser APIs
 
 ### Running Tests
-
-#### Frontend Tests
 ```bash
-cd iwc-frontend
-
 # Run all tests
 npm test
 
 # Run tests with coverage
-npm run test:coverage
+npm test -- --coverage
 
 # Run tests in watch mode
-npm run test:watch
+npm test -- --watch
 ```
 
-#### Backend Tests
-```bash
-cd iwc-backend
-
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test:watch
-```
-
-### Test Coverage
-- Frontend: Components, pages, utilities, and hooks
-- Backend: API routes, database queries, and middleware
-- Target coverage: 80% or higher
-
-### Writing New Tests
-
-#### Frontend Component Test Template
-```typescript
-import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import YourComponent from '../YourComponent';
-
-describe('YourComponent', () => {
-  const renderComponent = () => {
-    render(
-      <BrowserRouter>
-        <YourComponent />
-      </BrowserRouter>
-    );
-  };
-
-  it('renders successfully', async () => {
-    renderComponent();
-    // Add your test assertions
-  });
-});
-```
-
-#### Backend Route Test Template
-```javascript
-const request = require('supertest');
-const app = require('../app');
-
-describe('Your API Route', () => {
-  it('handles the request correctly', async () => {
-    const response = await request(app)
-      .get('/your/endpoint')
-      .expect(200);
-    // Add your test assertions
-  });
-});
-```
+### Test Coverage Goals
+- Components: 80% coverage
+- User interactions: 90% coverage
+- Error handling: 85% coverage
+- Form validation: 90% coverage
 
 ### Best Practices
-1. **Test Organization**
-   - Group related tests using describe blocks
-   - Use clear, descriptive test names
-   - Follow AAA pattern (Arrange, Act, Assert)
+1. Use `act()` for state updates
+2. Mock external dependencies
+3. Test user interactions
+4. Verify error states
+5. Test accessibility
+6. Use proper assertions with jest-dom
+7. Maintain type safety in tests
 
-2. **Mocking**
-   - Mock external dependencies
-   - Use meaningful test data
-   - Reset mocks between tests
+### Backend Testing Architecture
 
-3. **Coverage**
-   - Test happy and error paths
-   - Test edge cases
-   - Maintain high coverage percentage
-
-4. **Maintenance**
-   - Keep tests focused and atomic
-   - Update tests when changing code
-   - Document complex test scenarios
+(Backend testing documentation to be added when implemented)
