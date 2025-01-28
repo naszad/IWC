@@ -59,6 +59,8 @@ describe('TeacherRegisterForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear localStorage before each test
+    localStorage.clear();
   });
 
   it('renders registration form with all required fields', () => {
@@ -100,39 +102,45 @@ describe('TeacherRegisterForm', () => {
   it('handles successful registration', async () => {
     mockRegisterTeacher.mockResolvedValueOnce(mockRegisterResponse);
     
-    renderForm();
+    const { user } = renderForm();
     
     // Fill in the form
     await act(async () => {
-      await userEvent.type(screen.getByLabelText(/username/i), validFormData.username);
-      await userEvent.type(screen.getByLabelText(/password/i), validFormData.password);
-      await userEvent.type(screen.getByLabelText(/full name/i), validFormData.full_name);
-      await userEvent.type(screen.getByLabelText(/email/i), validFormData.email);
-      
-      // Submit the form
-      await userEvent.click(screen.getByRole('button', { name: /register/i }));
+      await user.type(screen.getByLabelText(/username/i), validFormData.username);
+      await user.type(screen.getByLabelText(/password/i), validFormData.password);
+      await user.type(screen.getByLabelText(/full name/i), validFormData.full_name);
+      await user.type(screen.getByLabelText(/email/i), validFormData.email);
     });
     
-    // Verify API was called with correct data
-    expect(mockRegisterTeacher).toHaveBeenCalledWith(validFormData);
+    // Submit the form
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /register/i }));
+    });
     
-    // Verify no error message is shown
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Wait for state updates to complete
+    await waitFor(() => {
+      // Verify API was called with correct data
+      expect(mockRegisterTeacher).toHaveBeenCalledWith(validFormData);
+      // Verify no error message is shown
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
   });
 
   it('handles duplicate username error', async () => {
     const errorMessage = 'Username already exists';
     mockRegisterTeacher.mockRejectedValueOnce(new Error(errorMessage));
     
-    renderForm();
+    const { user } = renderForm();
     
     await act(async () => {
-      await userEvent.type(screen.getByLabelText(/username/i), validFormData.username);
-      await userEvent.type(screen.getByLabelText(/password/i), validFormData.password);
-      await userEvent.type(screen.getByLabelText(/full name/i), validFormData.full_name);
-      await userEvent.type(screen.getByLabelText(/email/i), validFormData.email);
-      
-      await userEvent.click(screen.getByRole('button', { name: /register/i }));
+      await user.type(screen.getByLabelText(/username/i), validFormData.username);
+      await user.type(screen.getByLabelText(/password/i), validFormData.password);
+      await user.type(screen.getByLabelText(/full name/i), validFormData.full_name);
+      await user.type(screen.getByLabelText(/email/i), validFormData.email);
+    });
+    
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /register/i }));
     });
     
     // Verify error message is displayed
@@ -145,15 +153,17 @@ describe('TeacherRegisterForm', () => {
     const testPasswordRequirement = async (password: string, expectedError: string) => {
       mockRegisterTeacher.mockRejectedValueOnce(new Error(expectedError));
       
-      renderForm();
+      const { user } = renderForm();
       
       await act(async () => {
-        await userEvent.type(screen.getByLabelText(/username/i), validFormData.username);
-        await userEvent.type(screen.getByLabelText(/password/i), password);
-        await userEvent.type(screen.getByLabelText(/full name/i), validFormData.full_name);
-        await userEvent.type(screen.getByLabelText(/email/i), validFormData.email);
-        
-        await userEvent.click(screen.getByRole('button', { name: /register/i }));
+        await user.type(screen.getByLabelText(/username/i), validFormData.username);
+        await user.type(screen.getByLabelText(/password/i), password);
+        await user.type(screen.getByLabelText(/full name/i), validFormData.full_name);
+        await user.type(screen.getByLabelText(/email/i), validFormData.email);
+      });
+      
+      await act(async () => {
+        await user.click(screen.getByRole('button', { name: /register/i }));
       });
       
       await waitFor(() => {
@@ -186,40 +196,47 @@ describe('TeacherRegisterForm', () => {
     const { user } = renderForm();
     const firstErrorMessage = 'Username already exists';
 
-    // Fill in form with valid data
-    await user.type(screen.getByLabelText(/username/i), 'teacheruser');
-    await user.type(screen.getByLabelText(/password/i), 'Password123!');
-    await user.type(screen.getByLabelText(/full name/i), 'Teacher User');
-    await user.type(screen.getByLabelText(/email/i), 'teacher@example.com');
+    await act(async () => {
+      // Fill in form with valid data
+      await user.type(screen.getByLabelText(/username/i), 'teacheruser');
+      await user.type(screen.getByLabelText(/password/i), 'Password123!');
+      await user.type(screen.getByLabelText(/full name/i), 'Teacher User');
+      await user.type(screen.getByLabelText(/email/i), 'teacher@example.com');
+    });
 
     // Mock first submission to fail with username error
     mockRegisterTeacher.mockRejectedValueOnce(new Error(firstErrorMessage));
 
     // Submit form first time
-    const submitButton = screen.getByRole('button', { name: /register/i });
-    await user.click(submitButton);
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /register/i }));
+    });
 
-    // Wait for first error message with retries
+    // Wait for first error message
     await waitFor(() => {
       const errorElement = screen.getByRole('alert');
       expect(errorElement).toBeInTheDocument();
       expect(errorElement).toHaveTextContent(firstErrorMessage);
-    }, { timeout: 3000 });
+    });
 
-    // Change username and submit again
-    await user.clear(screen.getByLabelText(/username/i));
-    await user.type(screen.getByLabelText(/username/i), 'newteacheruser');
+    await act(async () => {
+      // Change username and submit again
+      await user.clear(screen.getByLabelText(/username/i));
+      await user.type(screen.getByLabelText(/username/i), 'newteacheruser');
+    });
 
     // Mock second submission to succeed
     mockRegisterTeacher.mockResolvedValueOnce(mockRegisterResponse);
 
     // Submit form second time
-    await user.click(submitButton);
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /register/i }));
+    });
 
     // Verify error message is cleared
     await waitFor(() => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
   });
 
   it('validates email format', async () => {
@@ -231,12 +248,17 @@ describe('TeacherRegisterForm', () => {
       await user.type(screen.getByLabelText(/password/i), validFormData.password);
       await user.type(screen.getByLabelText(/full name/i), validFormData.full_name);
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
+    });
+
+    await act(async () => {
       await user.click(screen.getByRole('button', { name: /register/i }));
     });
 
-    const errorElement = await screen.findByRole('alert');
-    expect(errorElement).toBeInTheDocument();
-    expect(errorElement).toHaveTextContent(errorMessage);
+    await waitFor(() => {
+      const errorElement = screen.getByRole('alert');
+      expect(errorElement).toBeInTheDocument();
+      expect(errorElement).toHaveTextContent(errorMessage);
+    });
 
     // Ensure registerTeacher is not called due to validation failure
     expect(mockRegisterTeacher).not.toHaveBeenCalled();
