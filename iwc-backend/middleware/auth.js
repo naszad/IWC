@@ -18,8 +18,8 @@ const authenticateToken = async (req, res, next) => {
       [verified.id]
     );
 
-    if (userResult.rows.length === 0) {
-      return res.status(403).json({ error: 'User not found.' });
+    if (!userResult || !userResult.rows || userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     const user = userResult.rows[0];
@@ -30,7 +30,7 @@ const authenticateToken = async (req, res, next) => {
         'SELECT teacher_id FROM teachers WHERE teacher_id = $1',
         [user.id]
       );
-      if (teacherResult.rows.length > 0) {
+      if (teacherResult && teacherResult.rows && teacherResult.rows.length > 0) {
         user.teacher_id = teacherResult.rows[0].teacher_id;
       }
     } else if (user.role === 'student') {
@@ -38,7 +38,7 @@ const authenticateToken = async (req, res, next) => {
         'SELECT student_id, level FROM students WHERE student_id = $1',
         [user.id]
       );
-      if (studentResult.rows.length > 0) {
+      if (studentResult && studentResult.rows && studentResult.rows.length > 0) {
         user.student_id = studentResult.rows[0].student_id;
         user.level = studentResult.rows[0].level;
       }

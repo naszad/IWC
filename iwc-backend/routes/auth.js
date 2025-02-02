@@ -81,8 +81,7 @@ router.post('/register/student', async (req, res) => {
       'SELECT * FROM users WHERE username = $1',
       [username]
     );
-
-    if (existingUser.rows.length > 0) {
+    if (existingUser && existingUser.rows && existingUser.rows.length > 0) {
       await pool.query('ROLLBACK');
       return res.status(400).json({ error: 'Username already exists' });
     }
