@@ -91,8 +91,9 @@ const CreateTestPage: React.FC = () => {
   };
 
   const handleTestSubmit = async () => {
-    if (formData.questions.length === 0) {
-      setError('Please add at least one question to the test');
+    const MIN_QUESTIONS = 4;
+    if (formData.questions.length < MIN_QUESTIONS) {
+      setError(`Please add at least ${MIN_QUESTIONS} questions to the test`);
       return;
     }
 
@@ -234,13 +235,13 @@ const CreateTestPage: React.FC = () => {
       <div className={styles.createTestContainer}>
         <div className={styles.progressBar}>
           <div className={`${styles.progressStep} ${step >= 1 ? styles.active : ''}`}>
-            Basic Info
+            <span>Basic Info</span>
           </div>
           <div className={`${styles.progressStep} ${step >= 2 ? styles.active : ''}`}>
-            Add Questions
+            <span>Add Questions</span>
           </div>
           <div className={`${styles.progressStep} ${step >= 3 ? styles.active : ''}`}>
-            Question Details
+            <span>Question Details</span>
           </div>
         </div>
 

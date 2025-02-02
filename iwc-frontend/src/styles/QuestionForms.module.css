@@ -1,23 +1,84 @@
-.questionForm {
+.form {
   background: var(--dark-surface);
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.formGroup {
-  margin-bottom: var(--spacing-lg);
+.form h3 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+  font-size: 1.5rem;
 }
 
-.formGroup label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.formSection {
+  background: var(--dark-surface-2);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.formSection h4 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  font-size: 1.1rem;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.imageInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.imageInputGroup label {
   color: var(--text-primary);
   font-weight: 500;
 }
 
-.input,
-.textarea {
+.imagePreview {
+  position: relative;
+  background: var(--dark-surface-3);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.errorText {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  padding: var(--spacing-sm);
+  text-align: center;
+  margin: 0;
+}
+
+.input, .textarea, .select {
   width: 100%;
   padding: var(--spacing-md);
   background: var(--dark-surface-2);
@@ -29,169 +90,27 @@
 }
 
 .textarea {
-  min-height: 120px;
+  min-height: 100px;
   resize: vertical;
 }
 
-.input:focus,
-.textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: linear-gradient(135deg, rgba(255, 126, 95, 0.05) 0%, rgba(254, 180, 123, 0.05) 100%);
+.inputError {
+  border-color: var(--error);
 }
 
-.mediaUpload {
-  margin: var(--spacing-lg) 0;
-}
-
-.mediaLabel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xl);
-  background: var(--dark-surface-2);
-  border: 2px dashed var(--border);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.mediaLabel:hover {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, rgba(255, 126, 95, 0.05) 0%, rgba(254, 180, 123, 0.05) 100%);
-}
-
-.uploadIcon {
-  font-size: 2rem;
-  color: var(--text-secondary);
-}
-
-.uploadText {
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.fileInput {
-  display: none;
-}
-
-.preview {
-  margin-top: var(--spacing-lg);
+.audioPreview {
+  margin-top: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--dark-surface-2);
+  background: var(--dark-surface-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
 
-.previewImage {
-  max-width: 100%;
-  max-height: 300px;
-  display: block;
-  margin: 0 auto;
-  border-radius: var(--radius-md);
-}
-
-.previewAudio {
+.audioPreview audio {
   width: 100%;
-  margin: var(--spacing-md) 0;
 }
 
-.optionsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.optionGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.optionInput {
-  flex: 1;
-}
-
-.removeButton {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(229, 57, 53, 0.1) 100%);
-  color: var(--error);
-  border: 1px solid rgba(244, 67, 54, 0.2);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.removeButton:hover {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(229, 57, 53, 0.2) 100%);
-}
-
-.addButton {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.1) 100%);
-  color: #66bb6a;
-  border: 1px solid rgba(76, 175, 80, 0.2);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.addButton:hover {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(139, 195, 74, 0.2) 100%);
-}
-
-.buttonGroup {
-  display: flex;
-  justify-content: space-between;
-  margin-top: var(--spacing-xl);
-  gap: var(--spacing-md);
-}
-
-.correctAnswerSection {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border);
-}
-
-.correctAnswerTitle {
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.radioGroup {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.radioLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--text-primary);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.radioLabel:hover {
-  background: linear-gradient(135deg, rgba(255, 126, 95, 0.05) 0%, rgba(254, 180, 123, 0.05) 100%);
-}
-
-.radioInput {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  cursor: pointer;
-}
-
-/* Sequence specific styles */
-.sequenceList {
+.sequenceContainer {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
@@ -202,7 +121,7 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--dark-surface-2);
+  background: var(--dark-surface-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -211,7 +130,13 @@
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--primary);
-  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dark-surface-2);
+  border-radius: 50%;
 }
 
 .sequenceControls {
@@ -219,68 +144,77 @@
   gap: var(--spacing-sm);
 }
 
-.moveButton {
-  background: var(--dark-surface-3);
-  color: var(--text-primary);
+.sequenceButton {
+  background: var(--dark-surface-2);
   border: 1px solid var(--border);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--text-primary);
+  padding: var(--spacing-sm);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition);
 }
 
-.moveButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+.sequenceButton:hover:not(:disabled) {
+  background: var(--primary-gradient);
+  border-color: transparent;
 }
 
-.moveButton:disabled {
+.sequenceButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Fill in the blank specific styles */
-.contextInput {
-  margin-bottom: var(--spacing-lg);
-}
-
-.blankOptions {
+.buttonGroup {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  margin-top: var(--spacing-xl);
   gap: var(--spacing-md);
 }
 
-.blankOption {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--dark-surface-2);
+.primaryButton, .secondaryButton {
+  padding: var(--spacing-md) var(--spacing-xl);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 120px;
 }
 
-/* Responsive Adjustments */
+.primaryButton {
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  border: none;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--primary);
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.secondaryButton:hover {
+  background: linear-gradient(135deg, rgba(255, 126, 95, 0.1) 0%, rgba(254, 180, 123, 0.1) 100%);
+}
+
 @media (max-width: 768px) {
-  .optionGroup {
-    flex-direction: column;
-    align-items: stretch;
+  .form {
+    padding: var(--spacing-lg);
+  }
+
+  .gridContainer {
+    grid-template-columns: 1fr;
   }
 
   .buttonGroup {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
-  .buttonGroup button {
+  .primaryButton, .secondaryButton {
     width: 100%;
-  }
-
-  .sequenceItem {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .sequenceControls {
-    width: 100%;
-    justify-content: center;
   }
 } 

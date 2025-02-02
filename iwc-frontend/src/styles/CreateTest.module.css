@@ -12,6 +12,7 @@
   padding: var(--spacing-md);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
+  position: relative;
 }
 
 .progressStep {
@@ -21,6 +22,14 @@
   color: var(--text-secondary);
   padding: var(--spacing-md);
   font-weight: 500;
+  z-index: 2;
+}
+
+.progressStep span {
+  position: relative;
+  background: var(--dark-surface);
+  padding: 0 var(--spacing-md);
+  z-index: 2;
 }
 
 .progressStep::before {
@@ -31,7 +40,7 @@
   right: 0;
   height: 2px;
   background: var(--border);
-  z-index: 0;
+  z-index: 1;
 }
 
 .progressStep:first-child::before {
@@ -43,6 +52,10 @@
 }
 
 .progressStep.active {
+  color: var(--primary);
+}
+
+.progressStep.active span {
   color: var(--primary);
 }
 
@@ -90,6 +103,47 @@
   outline: none;
   border-color: var(--primary);
   background: linear-gradient(135deg, rgba(255, 126, 95, 0.05) 0%, rgba(254, 180, 123, 0.05) 100%);
+}
+
+.formGroup select {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--dark-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: var(--transition);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: 
+    linear-gradient(45deg, transparent 50%, var(--text-primary) 50%),
+    linear-gradient(135deg, var(--text-primary) 50%, transparent 50%);
+  background-position: 
+    calc(100% - 20px) calc(1em + 2px),
+    calc(100% - 15px) calc(1em + 2px);
+  background-size: 
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+.formGroup select option {
+  background-color: var(--dark-surface-2);
+  color: var(--text-primary);
+  padding: var(--spacing-md);
+}
+
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--dark-surface-2);
+  background-image: 
+    linear-gradient(45deg, var(--primary) 50%, transparent 50%),
+    linear-gradient(135deg, transparent 50%, var(--primary) 50%);
 }
 
 .buttonGroup {

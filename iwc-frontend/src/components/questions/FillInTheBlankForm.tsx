@@ -69,49 +69,57 @@ const FillInTheBlankForm: React.FC<FillInTheBlankFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <h3>{isEditing ? 'Edit Fill in the Blank Question' : 'Fill in the Blank Question'}</h3>
+      <h3>{isEditing ? 'Edit Fill in the Blank Question' : 'Create Fill in the Blank Question'}</h3>
 
       <div className={styles.formContainer}>
-        <div className={styles.formGroup}>
-          <label>Context (Optional)</label>
-          <textarea
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            placeholder="Enter context for the question"
-            className={styles.textarea}
-          />
-        </div>
+        <div className={styles.formSection}>
+          <h4>Question Text</h4>
+          <div className={styles.formGroup}>
+            <label>Context (Optional)</label>
+            <textarea
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Enter context for the question (optional)"
+              className={styles.textarea}
+            />
+          </div>
 
-        <div className={styles.formGroup}>
-          <label>Sentence with Blank</label>
-          <input
-            type="text"
-            value={sentence}
-            onChange={(e) => setSentence(e.target.value)}
-            placeholder="Enter sentence with ___ for blank"
-            className={styles.input}
-          />
-        </div>
-
-        {options.map((option, index) => (
-          <div key={index} className={styles.formGroup}>
-            <label>Option {index + 1}</label>
+          <div className={styles.formGroup}>
+            <label>Sentence with Blank</label>
             <input
               type="text"
-              value={option}
-              onChange={(e) => {
-                const newOptions = [...options];
-                newOptions[index] = e.target.value;
-                setOptions(newOptions);
-              }}
-              placeholder={`Enter option ${index + 1}`}
+              value={sentence}
+              onChange={(e) => setSentence(e.target.value)}
+              placeholder="Enter sentence with ___ for blank (e.g., 'The cat ___ on the mat.')"
               className={styles.input}
             />
           </div>
-        ))}
+        </div>
 
-        <div className={styles.formGroup}>
-          <label>Correct Answer</label>
+        <div className={styles.formSection}>
+          <h4>Answer Options</h4>
+          <div className={styles.gridContainer}>
+            {options.map((option, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Option {index + 1}</label>
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => {
+                    const newOptions = [...options];
+                    newOptions[index] = e.target.value;
+                    setOptions(newOptions);
+                  }}
+                  placeholder={`Enter option ${index + 1}`}
+                  className={styles.input}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.formSection}>
+          <h4>Correct Answer</h4>
           <select
             value={selectedCorrectIndex}
             onChange={(e) => setSelectedCorrectIndex(parseInt(e.target.value))}

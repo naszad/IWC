@@ -90,77 +90,90 @@ const ListeningSelectionForm: React.FC<ListeningSelectionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <h3>{isEditing ? 'Edit Listening Selection Question' : 'Listening Selection Question'}</h3>
+      <h3>{isEditing ? 'Edit Listening Selection Question' : 'Create Listening Selection Question'}</h3>
 
       <div className={styles.formContainer}>
-        <div className={styles.formGroup}>
-          <label>Audio URL</label>
-          <input
-            type="text"
-            value={audioUrl}
-            onChange={(e) => setAudioUrl(e.target.value)}
-            placeholder="Enter audio URL"
-            className={styles.input}
-          />
-          {audioUrl && (
-            <div className={styles.audioPreview}>
-              <audio controls>
-                <source src={audioUrl} type="audio/mpeg" />
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
-        </div>
-
-        {images.map((image, index) => (
-          <div key={index} className={styles.imageInputGroup}>
-            <label>Image URL {index + 1}</label>
+        <div className={styles.formSection}>
+          <h4>Audio</h4>
+          <div className={styles.formGroup}>
+            <label>Audio URL</label>
             <input
               type="text"
-              value={image}
-              onChange={(e) => {
-                const newImages = [...images];
-                newImages[index] = e.target.value;
-                setImages(newImages);
-              }}
-              placeholder={`Enter image URL ${index + 1}`}
-              className={imageErrors[index] ? styles.inputError : ''}
+              value={audioUrl}
+              onChange={(e) => setAudioUrl(e.target.value)}
+              placeholder="Enter audio URL"
+              className={styles.input}
             />
-            {image && (
-              <div className={styles.imagePreview}>
-                <img
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  onError={() => handleImageError(index)}
-                  onLoad={() => handleImageLoad(index)}
-                />
-                {imageErrors[index] && (
-                  <p className={styles.errorText}>Invalid image URL</p>
-                )}
+            {audioUrl && (
+              <div className={styles.audioPreview}>
+                <audio controls>
+                  <source src={audioUrl} type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
               </div>
             )}
           </div>
-        ))}
+        </div>
 
-        {options.map((option, index) => (
-          <div key={index} className={styles.formGroup}>
-            <label>Option {index + 1}</label>
-            <input
-              type="text"
-              value={option}
-              onChange={(e) => {
-                const newOptions = [...options];
-                newOptions[index] = e.target.value;
-                setOptions(newOptions);
-              }}
-              placeholder={`Enter option ${index + 1}`}
-              className={styles.input}
-            />
+        <div className={styles.formSection}>
+          <h4>Images</h4>
+          <div className={styles.gridContainer}>
+            {images.map((image, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Image {index + 1}</label>
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => {
+                    const newImages = [...images];
+                    newImages[index] = e.target.value;
+                    setImages(newImages);
+                  }}
+                  placeholder={`Enter image URL ${index + 1}`}
+                  className={`${styles.input} ${imageErrors[index] ? styles.inputError : ''}`}
+                />
+                {image && (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={image}
+                      alt={`Preview ${index + 1}`}
+                      onError={() => handleImageError(index)}
+                      onLoad={() => handleImageLoad(index)}
+                    />
+                    {imageErrors[index] && (
+                      <p className={styles.errorText}>Invalid image URL</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
 
-        <div className={styles.formGroup}>
-          <label>Correct Answer</label>
+        <div className={styles.formSection}>
+          <h4>Options</h4>
+          <div className={styles.gridContainer}>
+            {options.map((option, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Option {index + 1}</label>
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => {
+                    const newOptions = [...options];
+                    newOptions[index] = e.target.value;
+                    setOptions(newOptions);
+                  }}
+                  placeholder={`Enter option ${index + 1}`}
+                  className={styles.input}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.formSection}>
+          <h4>Correct Answer</h4>
           <select
             value={selectedCorrectIndex}
             onChange={(e) => setSelectedCorrectIndex(parseInt(e.target.value))}

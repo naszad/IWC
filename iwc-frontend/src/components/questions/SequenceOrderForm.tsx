@@ -25,12 +25,47 @@ const SequenceOrderForm: React.FC<SequenceOrderFormProps> = ({
       ? (initialData.possible_answers as SequenceOrderAnswers).sequence
       : ['0', '1', '2', '3']
   );
+  const [imageErrors, setImageErrors] = useState<boolean[]>([false, false, false, false]);
+
+  const handleImageError = (index: number) => {
+    const newImageErrors = [...imageErrors];
+    newImageErrors[index] = true;
+    setImageErrors(newImageErrors);
+  };
+
+  const handleImageLoad = (index: number) => {
+    const newImageErrors = [...imageErrors];
+    newImageErrors[index] = false;
+    setImageErrors(newImageErrors);
+  };
+
+  const handleImageChange = (index: number, value: string) => {
+    const newImages = [...images];
+    newImages[index] = value;
+    setImages(newImages);
+    
+    const newImageErrors = [...imageErrors];
+    newImageErrors[index] = false;
+    setImageErrors(newImageErrors);
+  };
+
+  const handleSequenceChange = (currentIndex: number, direction: 'up' | 'down') => {
+    const newSequence = [...sequence];
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    [newSequence[currentIndex], newSequence[swapIndex]] = [newSequence[swapIndex], newSequence[currentIndex]];
+    setSequence(newSequence);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (images.some(img => !img.trim())) {
       alert('Please provide all image URLs');
+      return;
+    }
+
+    if (imageErrors.some(error => error)) {
+      alert('One or more image URLs are invalid. Please check the images.');
       return;
     }
 
@@ -46,49 +81,74 @@ const SequenceOrderForm: React.FC<SequenceOrderFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <h3>{isEditing ? 'Edit Sequence Order Question' : 'Sequence Order Question'}</h3>
+      <h3>{isEditing ? 'Edit Sequence Order Question' : 'Create Sequence Order Question'}</h3>
 
-      <div className={styles.gridContainer}>
-        {images.map((image, index) => (
-          <div key={index} className={styles.imageInputGroup}>
-            <label>Image URL {index + 1}</label>
-            <input
-              type="text"
-              value={image}
-              onChange={(e) => {
-                const newImages = [...images];
-                newImages[index] = e.target.value;
-                setImages(newImages);
-              }}
-              placeholder={`Enter image URL ${index + 1}`}
-            />
-            {image && (
-              <div className={styles.imagePreview}>
-                <img src={image} alt={`Preview ${index + 1}`} />
+      <div className={styles.formContainer}>
+        <div className={styles.formSection}>
+          <h4>Images</h4>
+          <div className={styles.gridContainer}>
+            {images.map((image, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Image {index + 1}</label>
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => handleImageChange(index, e.target.value)}
+                  placeholder={`Enter image URL ${index + 1}`}
+                  className={`${styles.input} ${imageErrors[index] ? styles.inputError : ''}`}
+                />
+                {image && (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={image}
+                      alt={`Preview ${index + 1}`}
+                      onError={() => handleImageError(index)}
+                      onLoad={() => handleImageLoad(index)}
+                    />
+                    {imageErrors[index] && (
+                      <p className={styles.errorText}>Invalid image URL</p>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
 
-        <div className={styles.sequenceGroup}>
-          <label>Correct Sequence</label>
-          <div className={styles.sequenceButtons}>
+        <div className={styles.formSection}>
+          <h4>Sequence Order</h4>
+          <p className={styles.helpText}>Arrange the images in the correct order using the up/down buttons</p>
+          <div className={styles.sequenceContainer}>
             {sequence.map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => {
-                  const newSequence = [...sequence];
-                  if (index > 0) {
-                    [newSequence[index], newSequence[index - 1]] = [newSequence[index - 1], newSequence[index]];
-                    setSequence(newSequence);
-                  }
-                }}
-                disabled={index === 0}
-                className={styles.sequenceButton}
-              >
-                {index + 1}
-              </button>
+              <div key={index} className={styles.sequenceItem}>
+                <span className={styles.sequenceNumber}>{index + 1}</span>
+                <div className={styles.imagePreview}>
+                  {images[parseInt(sequence[index])] && (
+                    <img
+                      src={images[parseInt(sequence[index])]}
+                      alt={`Sequence ${index + 1}`}
+                    />
+                  )}
+                </div>
+                <div className={styles.sequenceControls}>
+                  <button
+                    type="button"
+                    onClick={() => handleSequenceChange(index, 'up')}
+                    disabled={index === 0}
+                    className={styles.sequenceButton}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSequenceChange(index, 'down')}
+                    disabled={index === sequence.length - 1}
+                    className={styles.sequenceButton}
+                  >
+                    ↓
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </div>

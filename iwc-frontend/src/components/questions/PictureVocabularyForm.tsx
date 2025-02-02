@@ -49,7 +49,6 @@ const PictureVocabularyForm: React.FC<PictureVocabularyFormProps> = ({
     newImages[index] = value;
     setImages(newImages);
     
-    // Reset error state when URL changes
     const newImageErrors = [...imageErrors];
     newImageErrors[index] = false;
     setImageErrors(newImageErrors);
@@ -87,9 +86,8 @@ const PictureVocabularyForm: React.FC<PictureVocabularyFormProps> = ({
     onSubmit({
       question_type: 'picture_vocabulary',
       possible_answers: {
-        media_url: images[0] || '',
-        options: words,
-        images
+        media_url: images[selectedCorrectIndex],
+        options: words
       },
       correct_answer: words[selectedCorrectIndex],
     });
@@ -97,49 +95,60 @@ const PictureVocabularyForm: React.FC<PictureVocabularyFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <h3>{isEditing ? 'Edit Picture Vocabulary Question' : 'Picture Vocabulary Question'}</h3>
+      <h3>{isEditing ? 'Edit Picture Vocabulary Question' : 'Create Picture Vocabulary Question'}</h3>
       
-      <div className={styles.gridContainer}>
-        {images.map((image, index) => (
-          <div key={index} className={styles.imageInputGroup}>
-            <label>Image URL {index + 1}</label>
-            <input
-              type="text"
-              value={image}
-              onChange={(e) => handleImageChange(index, e.target.value)}
-              placeholder={`Enter image URL ${index + 1}`}
-              className={imageErrors[index] ? styles.inputError : ''}
-            />
-            {image && (
-              <div className={styles.imagePreview}>
-                <img
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  onError={() => handleImageError(index)}
-                  onLoad={() => handleImageLoad(index)}
+      <div className={styles.formContainer}>
+        <div className={styles.formSection}>
+          <h4>Images</h4>
+          <div className={styles.gridContainer}>
+            {images.map((image, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Image {index + 1}</label>
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => handleImageChange(index, e.target.value)}
+                  placeholder={`Enter image URL ${index + 1}`}
+                  className={`${styles.input} ${imageErrors[index] ? styles.inputError : ''}`}
                 />
-                {imageErrors[index] && (
-                  <p className={styles.errorText}>Invalid image URL</p>
+                {image && (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={image}
+                      alt={`Preview ${index + 1}`}
+                      onError={() => handleImageError(index)}
+                      onLoad={() => handleImageLoad(index)}
+                    />
+                    {imageErrors[index] && (
+                      <p className={styles.errorText}>Invalid image URL</p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
 
-        {words.map((word, index) => (
-          <div key={index} className={styles.wordInputGroup}>
-            <label>Word {index + 1}</label>
-            <input
-              type="text"
-              value={word}
-              onChange={(e) => handleWordChange(index, e.target.value)}
-              placeholder={`Enter word ${index + 1}`}
-            />
+        <div className={styles.formSection}>
+          <h4>Vocabulary Words</h4>
+          <div className={styles.gridContainer}>
+            {words.map((word, index) => (
+              <div key={index} className={styles.imageInputGroup}>
+                <label>Word {index + 1}</label>
+                <input
+                  type="text"
+                  value={word}
+                  onChange={(e) => handleWordChange(index, e.target.value)}
+                  placeholder={`Enter word ${index + 1}`}
+                  className={styles.input}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
 
-        <div className={styles.selectGroup}>
-          <label>Correct Answer</label>
+        <div className={styles.formSection}>
+          <h4>Correct Answer</h4>
           <select
             value={selectedCorrectIndex}
             onChange={(e) => setSelectedCorrectIndex(parseInt(e.target.value))}
