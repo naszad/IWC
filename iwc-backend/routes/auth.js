@@ -87,7 +87,8 @@ router.post('/register/student', async (req, res) => {
     }
 
     // Hash password
-    const hashed_password = await bcrypt.hash(password, 10);
+    // const hashed_password = await bcrypt.hash(password, 10);
+    const hashed_password = password;
 
     // Create user
     const userResult = await pool.query(
@@ -148,7 +149,8 @@ router.post('/register/teacher', async (req, res) => {
     }
 
     // Hash password
-    const hashed_password = await bcrypt.hash(password, 10);
+    // const hashed_password = await bcrypt.hash(password, 10);
+    const hashed_password = password;
 
     // Create user
     const userResult = await pool.query(
