@@ -531,68 +531,71 @@ npm run test:ci
 
 ## Testing Documentation
 
-The project implements comprehensive testing strategies for both frontend and backend components.
+The project implements comprehensive testing for both frontend and backend components using Jest as the primary testing framework.
 
-### Frontend Testing Architecture
+### Backend Testing (`iwc-backend/tests/`)
 
-The frontend testing suite uses the following technologies:
-- **Jest**: Main testing framework
-- **React Testing Library**: For testing React components
-- **@testing-library/user-event**: For simulating user interactions
-- **jest-dom**: For DOM-specific assertions
+The backend testing suite is organized into the following structure:
+- `setup.js`: Global test configuration and environment setup
+- `routes/`: API endpoint tests
+- `middleware/`: Authentication and middleware tests
+- `mocks/`: Mock database and service implementations
 
-#### Test Organization
-- Tests are located in the `iwc-frontend/tests` directory
-  - Component tests are in `iwc-frontend/tests/components`
-  - Main test files are in the root of the tests directory (e.g., `TestAssignments.test.tsx`)
-- Each test file follows the naming pattern `*.test.tsx`
-- Tests are organized by component and feature
+**Key Testing Patterns:**
+- Integration tests for API endpoints using `supertest`
+- Database query mocking for isolated testing
+- Error handling and edge case validation
+- Authentication and authorization testing
 
-#### Key Testing Patterns
-1. **Component Tests**
-   - Render testing with proper context providers
-   - User interaction simulation
-   - Async operation handling
-   - Form validation testing
-   - Error state verification
-
-2. **Mock Implementations**
-   - API calls are mocked using Jest's mock functions
-   - Properly typed mock responses using TypeScript
-   - Browser APIs (TextEncoder, IntersectionObserver) are polyfilled
-
-3. **Test Setup**
-   - Global setup in `setupTests.ts`
-   - Common test utilities and fixtures
-   - Environment polyfills for browser APIs
-
-### Running Tests
+Example running backend tests:
 ```bash
-# Run all tests
+cd iwc-backend
 npm test
-
-# Run tests with coverage
-npm test -- --coverage
-
-# Run tests in watch mode
-npm test -- --watch
 ```
 
-### Test Coverage Goals
-- Components: 80% coverage
-- User interactions: 90% coverage
-- Error handling: 85% coverage
-- Form validation: 90% coverage
+### Frontend Testing (`iwc-frontend/tests/`)
 
-### Best Practices
-1. Use `act()` for state updates
-2. Mock external dependencies
-3. Test user interactions
-4. Verify error states
-5. Test accessibility
-6. Use proper assertions with jest-dom
-7. Maintain type safety in tests
+The frontend testing suite uses React Testing Library and Jest, organized as:
+- `components/`: Individual component tests
+- `pages/`: Page-level integration tests
+- Unit tests for utility functions and hooks
 
-### Backend Testing Architecture
+**Testing Approach:**
+- Component rendering and interaction testing
+- API call mocking using Jest mock functions
+- State management testing
+- User interaction simulation
+- Accessibility testing
+- Error boundary testing
 
-(Backend testing documentation to be added when implemented)
+Example running frontend tests:
+```bash
+cd iwc-frontend
+npm test
+```
+
+### Test Coverage and Quality Assurance
+
+Both frontend and backend maintain test coverage for:
+- Core business logic
+- API endpoints and data flow
+- User interactions and UI components
+- Error scenarios and edge cases
+
+**Best Practices:**
+- Tests are isolated and independent
+- Mock external dependencies
+- Clear test descriptions
+- Consistent naming conventions
+- Regular test maintenance
+
+To run tests with coverage reports:
+```bash
+# Backend
+cd iwc-backend
+npm run test:coverage
+
+# Frontend
+cd iwc-frontend
+npm run test:coverage
+```
