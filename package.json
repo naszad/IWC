@@ -1,0 +1,16 @@
+{
+  "name": "iwc-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd iwc-backend && npm start",
+    "start:frontend": "cd iwc-frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "dependencies": {
+    "iwc-root": "file:"
+  }
+}
