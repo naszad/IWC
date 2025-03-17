@@ -1,0 +1,15 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "Client" [ label = "Client
+(DockerContainer)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "Server" [ label = "Server
+(DockerContainer)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "DB" [ label = "DB
+(PostgreSQL)", shape =cylinder, fillcolor = "#FFCFB3" ];
+  "server-uploads" [ label = "server-uploads
+(Volume)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "iwc-network" [ label = "iwc-network
+(Network)", shape =rectangle ];
+  "Client" -> "Server";
+  "Server" -> "DB";
+}

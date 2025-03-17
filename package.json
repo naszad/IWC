@@ -1,16 +1,37 @@
 {
-  "name": "iwc-root",
+  "name": "iwc-learning-platform",
   "version": "1.0.0",
-  "private": true,
+  "description": "IWC Learning Platform - A Comprehensive Language Learning Management System",
   "scripts": {
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "start:backend": "cd iwc-backend && npm start",
-    "start:frontend": "cd iwc-frontend && npm run dev"
+    "client:install": "cd client && npm install",
+    "server:install": "cd server && npm install",
+    "install:all": "concurrently \"npm run client:install\" \"npm run server:install\"",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "build": "concurrently \"npm run build:server\" \"npm run build:client\"",
+    "start": "cd server && npm start",
+    "migrate": "cd server && npm run migrate",
+    "seed": "cd server && npm run seed"
   },
+  "keywords": [
+    "education",
+    "language-learning",
+    "language-assessment",
+    "fullstack",
+    "typescript",
+    "react",
+    "express"
+  ],
+  "author": "IWC",
+  "license": "ISC",
   "devDependencies": {
-    "concurrently": "^7.6.0"
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "iwc-root": "file:"
+    "iwc-education-platform": "file:",
+    "iwc-learning-platform": "file:"
   }
 }
