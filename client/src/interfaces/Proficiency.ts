@@ -1,7 +1,9 @@
-export type SkillType = 'vocabulary' | 'grammar' | 'reading' | 'listening' | 'speaking' | 'writing' | 'comprehensive';
 export type ProficiencyLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | 'D1' | 'D2';
 
+export type SkillType = 'vocabulary' | 'grammar' | 'reading' | 'listening' | 'speaking' | 'writing' | 'comprehensive';
+
 export interface Assessment {
+  id: number;
   date: string;
   level: ProficiencyLevel;
   score: number;
@@ -51,8 +53,9 @@ export interface SkillProgressHistory {
   [key: string]: number[]; // Allow string indexing
 }
 
-export interface LanguageProficiency {
-  language: string;
+export interface ProficiencyData {
+  userId: number;
+  username: string;
   currentLevel: ProficiencyLevel;
   startLevel: ProficiencyLevel;
   progressPercentage: number;
@@ -67,10 +70,4 @@ export interface LanguageProficiency {
   achievements: Achievement[];
   weakAreas?: SkillRecommendation[];
   strongAreas?: SkillRecommendation[];
-}
-
-export interface ProficiencyData {
-  userId: number;
-  username: string;
-  languages: LanguageProficiency[];
 } 
