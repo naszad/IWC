@@ -26,6 +26,7 @@ import {
   ListItemIcon,
   CircularProgress as MuiCircularProgress,
   useTheme,
+  Alert,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SchoolIcon from '@mui/icons-material/School';
@@ -51,8 +52,15 @@ import {
   ProficiencyData, 
   LanguageProficiency, 
   SkillType, 
-  ProficiencyLevel 
+  ProficiencyLevel,
+  Activity
 } from '../interfaces/Proficiency';
+import ProficiencyChart from '../components/ProficiencyChart';
+import SkillBreakdown from '../components/SkillBreakdown';
+import AssessmentHistory from '../components/AssessmentHistory';
+import RecentActivities from '../components/RecentActivities';
+import Achievements from '../components/Achievements';
+import SkillRecommendations from '../components/SkillRecommendations';
 
 // Register Chart.js components
 ChartJS.register(
@@ -156,14 +164,14 @@ const TabPanel = (props: TabPanelProps) => {
 };
 
 // Main component
-const ProficiencyTracking = () => {
-  const [skillTabValue, setSkillTabValue] = useState(0);
+const ProficiencyTracking: React.FC = () => {
+  const { user } = useAuth();
+  const [proficiencyData, setProficiencyData] = useState<ProficiencyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [proficiencyData, setProficiencyData] = useState<ProficiencyData | null>(null);
+  const [skillTabValue, setSkillTabValue] = useState(0);
   const theme = useTheme();
-  const { user } = useAuth();
-  
+
   console.log('ProficiencyTracking - Current user:', user);
   
   // Add state for tracking which skills to display in the combined graph
@@ -174,41 +182,58 @@ const ProficiencyTracking = () => {
   // Fetch proficiency data when component mounts
   useEffect(() => {
     const fetchProficiencyData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        if (!user?.id) {
-          throw new Error('User not found');
-        }
         const data = await getUserProficiencyData();
         setProficiencyData(data);
         setError(null);
-      } catch (err: any) {
-        console.error('Failed to fetch proficiency data:', err);
-        
-        // Check if this is a 404 error (no data found)
-        if (err.response && err.response.status === 404) {
-          // Set proficiencyData to an empty state instead of showing an error
-          setProficiencyData({
-            userId: user?.id || 0,
-            username: user?.username || '',
-            languages: []
-          });
-          setError(null);
-        } else {
-          // For other errors, show an error message
-          setError('Failed to load proficiency data. Please try again later.');
-        }
+      } catch (err) {
+        console.error('Error fetching proficiency data:', err);
+        setError('Failed to load proficiency data. Please try again later.');
+        // Initialize with default data structure
+        setProficiencyData({
+          userId: user.id,
+          username: user.username,
+          currentLevel: 'A1',
+          startLevel: 'A1',
+          progressPercentage: 0,
+          startDate: new Date().toISOString().split('T')[0],
+          studyHours: 0,
+          completedQuestions: 0,
+          vocabMastered: 0,
+          assessmentHistory: [],
+          skillBreakdown: {
+            vocabulary: 0,
+            grammar: 0,
+            reading: 0,
+            listening: 0,
+            speaking: 0,
+            writing: 0
+          },
+          skillProgressHistory: {
+            vocabulary: [],
+            grammar: [],
+            reading: [],
+            listening: [],
+            speaking: [],
+            writing: []
+          },
+          recentActivities: [],
+          achievements: [],
+          weakAreas: [],
+          strongAreas: []
+        });
       } finally {
         setLoading(false);
       }
     };
-    
-    if (user?.id) {
-      fetchProficiencyData();
-    } else {
-      setLoading(false);
-      setError('Please log in to view your proficiency data.');
-    }
+
+    fetchProficiencyData();
   }, [user]);
 
   const handleSkillTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -495,10 +520,10 @@ const ProficiencyTracking = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
-        {englishData.language} Proficiency Tracking
+        English Proficiency Tracking
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Track your progress in {englishData.language} through your assessment results and see how your skills are developing over time.
+        Track your progress in English through your assessment results and see how your skills are developing over time.
       </Typography>
 
       {/* Overview Cards */}
@@ -835,6 +860,72 @@ const ProficiencyTracking = () => {
               </Button>
             </CardContent>
           </Card>
+        </Grid>
+      </Grid>
+
+      {/* Additional content */}
+      <Grid container spacing={3} sx={{ mt: 4 }}>
+        {/* Overall Progress */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Overall Progress
+            </Typography>
+            <ProficiencyChart data={proficiencyData} />
+          </Paper>
+        </Grid>
+
+        {/* Skill Breakdown */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Skill Breakdown
+            </Typography>
+            <SkillBreakdown data={proficiencyData.skillBreakdown} />
+          </Paper>
+        </Grid>
+
+        {/* Assessment History */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Assessment History
+            </Typography>
+            <AssessmentHistory assessments={proficiencyData.assessmentHistory} />
+          </Paper>
+        </Grid>
+
+        {/* Recent Activities */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Recent Activities
+            </Typography>
+            <RecentActivities activities={proficiencyData.recentActivities} />
+          </Paper>
+        </Grid>
+
+        {/* Achievements */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Achievements
+            </Typography>
+            <Achievements achievements={proficiencyData.achievements} />
+          </Paper>
+        </Grid>
+
+        {/* Skill Recommendations */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Skill Recommendations
+            </Typography>
+            <SkillRecommendations 
+              weakAreas={proficiencyData.weakAreas}
+              strongAreas={proficiencyData.strongAreas}
+            />
+          </Paper>
         </Grid>
       </Grid>
     </Container>
