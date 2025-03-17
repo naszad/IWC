@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import theme from '../styles/theme';
 import {
   Container,
@@ -24,7 +25,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  CircularProgress as MuiCircularProgress,
+  CircularProgress,
   useTheme,
   Alert,
 } from '@mui/material';
@@ -32,7 +33,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SchoolIcon from '@mui/icons-material/School';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import EventNoteIcon from '@mui/icons-material/EventNote';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { Line } from 'react-chartjs-2';
 import {
@@ -45,12 +45,23 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { MenuBook, School, Headphones, SpeakerNotes, Create } from '@mui/icons-material';
+import {
+  EmojiEvents,
+  Timeline,
+  School,
+  Language,
+  MenuBook,
+  Headphones,
+  SpeakerNotes,
+  Create,
+  Assessment as AssessmentIcon,
+  QuestionAnswer,
+  EventNote as EventNoteIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProficiencyData } from '../utils/proficiencyService';
 import { 
   ProficiencyData, 
-  LanguageProficiency, 
   SkillType, 
   ProficiencyLevel,
   Activity
@@ -171,6 +182,7 @@ const ProficiencyTracking: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [skillTabValue, setSkillTabValue] = useState(0);
   const theme = useTheme();
+  const navigate = useNavigate();
 
   console.log('ProficiencyTracking - Current user:', user);
   
@@ -254,88 +266,66 @@ const ProficiencyTracking: React.FC = () => {
   // If loading, show loading spinner
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <MuiCircularProgress />
-          <Typography variant="h6" sx={{ mt: 2 }}>Loading proficiency data...</Typography>
-        </Box>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
-  // If error, show error message
   if (error) {
     return (
-      <Container sx={{ mt: 4 }}>
-        <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#fde8e7' }}>
-          <Typography variant="h6" color="error">Error</Typography>
-          <Typography>{error}</Typography>
-          <Button 
-            variant="contained" 
-            sx={{ mt: 2 }} 
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </Button>
-        </Paper>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </Container>
     );
   }
 
-  // If no data or no languages, show a message
-  if (!proficiencyData || proficiencyData.languages.length === 0) {
+  if (!proficiencyData) {
     return (
-      <Container sx={{ mt: 4 }}>
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <SchoolIcon sx={{ fontSize: 60, color: theme.palette.primary.main, mb: 2 }} />
-          <Typography variant="h5" gutterBottom>No Proficiency Data Available</Typography>
-          <Typography variant="body1" sx={{ mt: 1, mb: 3 }}>
-            You haven't taken any assessments yet. Complete assessments to start tracking your English proficiency.
-          </Typography>
-          <Grid container spacing={2} justifyContent="center">
-            <Grid item>
-              <Button 
-                variant="contained" 
-                color="primary"
-                startIcon={<BarChartIcon />}
-                onClick={() => {/* Handle taking assessment */}}
-              >
-                Take an Assessment
-              </Button>
-            </Grid>
-            <Grid item>
-              <Button 
-                variant="outlined"
-                startIcon={<MenuBook />}
-                onClick={() => {/* Handle browsing assessments */}}
-              >
-                Browse Assessments
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          English Proficiency Tracking
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          No proficiency data available. Take a placement test to start tracking your progress.
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<School />}
+          onClick={() => navigate('/assessments')}
+        >
+          Take Placement Test
+        </Button>
       </Container>
     );
   }
   
-  // English language data - always use index 0 for now
-  // In a more complete implementation, we could add language switching
-  const englishData = proficiencyData.languages[0];
-
   // Create skill-specific proficiency history data
   const createSkillHistoryData = (skillName: SkillType) => {
-    const labels = ['January', 'February', 'March', 'April', 'May', 'June'];
-    const data = englishData?.skillProgressHistory?.[skillName] || [];
-    
+    if (!proficiencyData?.skillProgressHistory) return null;
+
+    const skillData = proficiencyData.skillProgressHistory[skillName] || [];
+    const dates = Array.from({ length: skillData.length }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (skillData.length - 1 - i));
+      return date.toLocaleDateString();
+    });
+
     return {
-      labels,
+      labels: dates,
       datasets: [
         {
-          label: `${skillName.charAt(0).toUpperCase() + skillName.slice(1)} Progress`,
-          data,
+          label: skillName.charAt(0).toUpperCase() + skillName.slice(1),
+          data: skillData,
           borderColor: getSkillColor(skillName),
-          tension: 0.3,
-          fill: false,
+          backgroundColor: `${getSkillColor(skillName)}30`,
+          tension: 0.4,
+          fill: true,
         },
       ],
     };
@@ -343,24 +333,41 @@ const ProficiencyTracking: React.FC = () => {
 
   // Create combined skills chart data
   const createCombinedSkillsData = () => {
-    const labels = ['January', 'February', 'March', 'April', 'May', 'June'];
-    
+    if (!proficiencyData?.skillProgressHistory) {
+      return {
+        labels: Array.from({ length: 30 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (29 - i));
+          return date.toLocaleDateString();
+        }),
+        datasets: selectedSkills.map(skill => ({
+          label: skill.charAt(0).toUpperCase() + skill.slice(1),
+          data: Array(30).fill(0),
+          borderColor: getSkillColor(skill),
+          backgroundColor: `${getSkillColor(skill)}30`,
+          tension: 0.4,
+          fill: true,
+        })),
+      };
+    }
+
+    const dates = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      return date.toLocaleDateString();
+    });
+
     const datasets = selectedSkills.map(skill => ({
-      label: `${skill.charAt(0).toUpperCase() + skill.slice(1)}`,
-      data: englishData?.skillProgressHistory?.[skill] || [],
+      label: skill.charAt(0).toUpperCase() + skill.slice(1),
+      data: proficiencyData.skillProgressHistory?.[skill] || [],
       borderColor: getSkillColor(skill),
-      backgroundColor: `${getSkillColor(skill)}20`,
+      backgroundColor: `${getSkillColor(skill)}30`,
       tension: 0.4,
-      fill: false,
-      pointBackgroundColor: theme.palette.background.paper,
-      pointBorderColor: getSkillColor(skill),
-      pointHoverBackgroundColor: getSkillColor(skill),
-      pointHoverBorderColor: theme.palette.background.paper,
-      borderWidth: 2,
+      fill: true,
     }));
-    
+
     return {
-      labels,
+      labels: dates,
       datasets,
     };
   };
@@ -476,7 +483,7 @@ const ProficiencyTracking: React.FC = () => {
       datasets: [
         {
           label: 'Current Proficiency',
-          data: skills.map(skill => englishData.skillBreakdown[skill]),
+          data: skills.map(skill => proficiencyData.skillBreakdown[skill]),
           backgroundColor: skills.map(skill => getSkillColor(skill as SkillType)),
           borderWidth: 1,
         },
@@ -511,14 +518,33 @@ const ProficiencyTracking: React.FC = () => {
   };
 
   // Filter activities based on skill type
-  const filteredActivities = englishData?.recentActivities.filter(activity => {
+  const filteredActivities = proficiencyData?.recentActivities.filter((activity: Activity) => {
     if (skillTabValue === 0) return true;
     const skillTypes: SkillType[] = ['vocabulary', 'grammar', 'reading', 'listening', 'speaking', 'writing'];
     return activity.skill === skillTypes[skillTabValue - 1];
   }) || [];
 
+  const renderActivityIcon = (activity: Activity) => {
+    switch (activity.type) {
+      case 'assessment':
+        return <AssessmentIcon />;
+      case 'lesson':
+        return <SchoolIcon />;
+      case 'practice':
+        return <MenuBook />;
+      default:
+        return <EventNoteIcon />;
+    }
+  };
+
+  const getSkillProgress = (skill: SkillType): number => {
+    return proficiencyData?.skillBreakdown[skill] || 0;
+  };
+
+  const skillTypes: SkillType[] = ['vocabulary', 'grammar', 'reading', 'listening', 'speaking', 'writing'];
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>
         English Proficiency Tracking
       </Typography>
@@ -533,20 +559,20 @@ const ProficiencyTracking: React.FC = () => {
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">Current Level</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <Typography variant="h4" sx={{ mr: 1 }}>{englishData.currentLevel}</Typography>
+                <Typography variant="h4" sx={{ mr: 1 }}>{proficiencyData.currentLevel}</Typography>
                 <Chip 
                   size="small" 
-                  label={proficiencyLevels.find(l => l.level === englishData.currentLevel)?.name} 
-                  sx={{ backgroundColor: proficiencyLevels.find(l => l.level === englishData.currentLevel)?.color }}
+                  label={proficiencyLevels.find(l => l.level === proficiencyData.currentLevel)?.name} 
+                  sx={{ backgroundColor: proficiencyLevels.find(l => l.level === proficiencyData.currentLevel)?.color }}
                 />
               </Box>
               <LinearProgress 
                 variant="determinate" 
-                value={englishData.progressPercentage} 
+                value={proficiencyData.progressPercentage} 
                 sx={{ mt: 2, mb: 1, height: 8, borderRadius: 4 }} 
               />
               <Typography variant="caption" color="text.secondary">
-                {englishData.progressPercentage}% towards next level
+                {proficiencyData.progressPercentage}% towards next level
               </Typography>
             </CardContent>
           </Card>
@@ -555,9 +581,9 @@ const ProficiencyTracking: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">Study Time</Typography>
-              <Typography variant="h4">{englishData.studyHours} hrs</Typography>
+              <Typography variant="h4">{proficiencyData.studyHours} hrs</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Since {new Date(englishData.startDate).toLocaleDateString()}
+                Since {new Date(proficiencyData.startDate).toLocaleDateString()}
               </Typography>
             </CardContent>
           </Card>
@@ -566,7 +592,7 @@ const ProficiencyTracking: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">Completed Assessments</Typography>
-              <Typography variant="h4">{englishData.completedQuestions}</Typography>
+              <Typography variant="h4">{proficiencyData.completedQuestions}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Total completed assessments
               </Typography>
@@ -577,7 +603,7 @@ const ProficiencyTracking: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">Vocabulary</Typography>
-              <Typography variant="h4">{englishData.vocabMastered}</Typography>
+              <Typography variant="h4">{proficiencyData.vocabMastered}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Words mastered
               </Typography>
@@ -597,7 +623,7 @@ const ProficiencyTracking: React.FC = () => {
                   Proficiency Level Progression
                 </Typography>
               </Box>
-              <ProficiencyLevelProgress currentLevel={englishData.currentLevel} />
+              <ProficiencyLevelProgress currentLevel={proficiencyData.currentLevel} />
             </CardContent>
           </Card>
 
@@ -649,7 +675,7 @@ const ProficiencyTracking: React.FC = () => {
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle2" gutterBottom>Skill Breakdown</Typography>
                 <Grid container spacing={1}>
-                  {Object.entries(englishData.skillBreakdown).map(([skill, value]) => (
+                  {Object.entries(proficiencyData.skillBreakdown).map(([skill, value]) => (
                     <Grid item xs={6} md={4} key={skill}>
                       <Paper elevation={0} sx={{ p: 2, border: `1px solid ${theme.palette.divider}` }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -660,7 +686,7 @@ const ProficiencyTracking: React.FC = () => {
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Box sx={{ position: 'relative', display: 'inline-flex', mr: 2 }}>
-                            <MuiCircularProgress 
+                            <CircularProgress 
                               variant="determinate" 
                               value={value} 
                               size={50} 
@@ -720,7 +746,7 @@ const ProficiencyTracking: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {englishData.assessmentHistory.map((assessment, index) => (
+                    {proficiencyData.assessmentHistory.map((assessment, index) => (
                       <TableRow key={index}>
                         <TableCell>{new Date(assessment.date).toLocaleDateString()}</TableCell>
                         <TableCell>
@@ -743,14 +769,14 @@ const ProficiencyTracking: React.FC = () => {
           </Card>
 
           {/* Areas for Improvement */}
-          {englishData.weakAreas && englishData.weakAreas.length > 0 && (
+          {proficiencyData.weakAreas && proficiencyData.weakAreas.length > 0 && (
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Areas for Improvement
                 </Typography>
                 <List disablePadding>
-                  {englishData.weakAreas?.map((area, index) => (
+                  {proficiencyData.weakAreas?.map((area, index) => (
                     <ListItem key={index} sx={{ px: 0, py: 1 }} disablePadding>
                       <ListItemIcon sx={{ minWidth: 40 }}>
                         {getSkillIcon(area.skill)}
@@ -767,14 +793,14 @@ const ProficiencyTracking: React.FC = () => {
           )}
 
           {/* Strengths */}
-          {englishData.strongAreas && englishData.strongAreas.length > 0 && (
+          {proficiencyData.strongAreas && proficiencyData.strongAreas.length > 0 && (
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Your Strengths
                 </Typography>
                 <List disablePadding>
-                  {englishData.strongAreas?.map((area, index) => (
+                  {proficiencyData.strongAreas?.map((area, index) => (
                     <ListItem key={index} sx={{ px: 0, py: 1 }} disablePadding>
                       <ListItemIcon sx={{ minWidth: 40 }}>
                         {getSkillIcon(area.skill)}
@@ -797,7 +823,7 @@ const ProficiencyTracking: React.FC = () => {
                 Recent Assessments
               </Typography>
               <List disablePadding>
-                {englishData.recentActivities.slice(0, 5).map((activity) => (
+                {proficiencyData.recentActivities.slice(0, 5).map((activity) => (
                   <ListItem key={activity.id} sx={{ px: 0, borderBottom: `1px solid ${theme.palette.divider}`, py: 1 }} disablePadding>
                     <ListItemText
                       primary={
@@ -814,40 +840,9 @@ const ProficiencyTracking: React.FC = () => {
                                   activity.skill === 'reading' ? `${theme.palette.warning.main}10` :
                                   activity.skill === 'listening' ? `${theme.palette.secondary.main}10` :
                                   activity.skill === 'speaking' ? `${theme.palette.error.main}10` :
-                                  activity.skill === 'comprehensive' ? `${theme.palette.info.light}10` :
-                                  `${theme.palette.info.main}10`,
-                                color: 
-                                  activity.skill === 'vocabulary' ? theme.palette.success.main :
-                                  activity.skill === 'grammar' ? theme.palette.primary.main :
-                                  activity.skill === 'reading' ? theme.palette.warning.main :
-                                  activity.skill === 'listening' ? theme.palette.secondary.main :
-                                  activity.skill === 'speaking' ? theme.palette.error.main :
-                                  activity.skill === 'comprehensive' ? theme.palette.info.light :
-                                  theme.palette.info.main,
-                              }} 
+                                  `${theme.palette.info.main}10`
+                              }}
                             />
-                          )}
-                        </Box>
-                      }
-                      secondary={
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(activity.date).toLocaleDateString()}
-                          </Typography>
-                          {activity.score && (
-                            <Typography variant="caption" color="text.secondary">
-                              Score: {activity.score}%
-                            </Typography>
-                          )}
-                          {activity.progress && (
-                            <Typography variant="caption" color="text.secondary">
-                              Progress: {activity.progress}%
-                            </Typography>
-                          )}
-                          {activity.result && (
-                            <Typography variant="caption" color="text.secondary">
-                              Result: {activity.result}
-                            </Typography>
                           )}
                         </Box>
                       }
@@ -855,77 +850,8 @@ const ProficiencyTracking: React.FC = () => {
                   </ListItem>
                 ))}
               </List>
-              <Button variant="text" size="small" sx={{ mt: 1 }}>
-                View All Assessments
-              </Button>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
-      {/* Additional content */}
-      <Grid container spacing={3} sx={{ mt: 4 }}>
-        {/* Overall Progress */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Overall Progress
-            </Typography>
-            <ProficiencyChart data={proficiencyData} />
-          </Paper>
-        </Grid>
-
-        {/* Skill Breakdown */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Skill Breakdown
-            </Typography>
-            <SkillBreakdown data={proficiencyData.skillBreakdown} />
-          </Paper>
-        </Grid>
-
-        {/* Assessment History */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Assessment History
-            </Typography>
-            <AssessmentHistory assessments={proficiencyData.assessmentHistory} />
-          </Paper>
-        </Grid>
-
-        {/* Recent Activities */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Recent Activities
-            </Typography>
-            <RecentActivities activities={proficiencyData.recentActivities} />
-          </Paper>
-        </Grid>
-
-        {/* Achievements */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Achievements
-            </Typography>
-            <Achievements achievements={proficiencyData.achievements} />
-          </Paper>
-        </Grid>
-
-        {/* Skill Recommendations */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Skill Recommendations
-            </Typography>
-            <SkillRecommendations 
-              weakAreas={proficiencyData.weakAreas}
-              strongAreas={proficiencyData.strongAreas}
-            />
-          </Paper>
         </Grid>
       </Grid>
     </Container>
