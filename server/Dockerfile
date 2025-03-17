@@ -1,5 +1,5 @@
 # Build stage
-FROM node:16-alpine AS builder
+FROM node:18-alpine AS builder
 
 WORKDIR /usr/src/app
 
@@ -16,7 +16,7 @@ COPY . .
 RUN npx tsc
 
 # Production stage
-FROM node:16-alpine
+FROM node:18-alpine
 
 # Set node environment
 ENV NODE_ENV=production

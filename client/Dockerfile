@@ -1,5 +1,5 @@
 # Build stage: build the React app
-FROM node:16-alpine as builder
+FROM node:18-alpine as builder
 
 # Configure Node.js to use less memory during build
 ENV NODE_OPTIONS="--max-old-space-size=1024"
