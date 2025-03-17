@@ -7,18 +7,28 @@ import { ProficiencyRequest, LanguageProficiency, SkillType } from '../types/pro
  */
 export const getProficiencyData = async (req: ProficiencyRequest, res: Response) => {
   try {
+    console.log('Received proficiency data request');
+    console.log('User:', req.user);
+    console.log('Params:', req.params);
+    
     // Get user ID from request params or from authenticated user
     const userId = req.params.userId ? parseInt(req.params.userId) : req.user?.id;
     const language = req.params.language;
     
+    console.log('Using userId:', userId);
+    
     // Validate user ID
     if (!userId) {
+      console.log('No user ID found');
       return res.status(400).json({ error: 'User ID is required' });
     }
     
     // Check if user exists
     const userResult = await pool.query('SELECT id, username FROM users WHERE id = $1', [userId]);
+    console.log('User query result:', userResult.rows[0]);
+    
     if (userResult.rows.length === 0) {
+      console.log('User not found');
       return res.status(404).json({ error: 'User not found' });
     }
     

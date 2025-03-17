@@ -6,7 +6,12 @@ import { ProficiencyData } from '../interfaces/Proficiency';
  */
 export const getUserProficiencyData = async (): Promise<ProficiencyData> => {
   try {
+    console.log('Fetching proficiency data...');
+    const token = localStorage.getItem('auth_token');
+    console.log('Auth token:', token ? 'Present' : 'Missing');
+    
     const response = await api.get('/api/proficiency/profile');
+    console.log('Proficiency data response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user proficiency data:', error);
