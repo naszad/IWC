@@ -73,7 +73,7 @@ const getLanguageProficiencyData = async (userId: number, language: string): Pro
   
   // Get assessment history
   const assessmentsResult = await pool.query(
-    'SELECT date, level, score FROM assessments WHERE user_id = $1 AND language = $2 ORDER BY date',
+    'SELECT date, level, score FROM proficiency_assessments WHERE user_id = $1 AND language = $2 ORDER BY date',
     [userId, language]
   );
   
@@ -193,7 +193,7 @@ export const recordAssessment = async (req: Request, res: Response) => {
     
     // Insert the assessment record
     const result = await pool.query(
-      'INSERT INTO assessments (user_id, language, level, score) VALUES ($1, $2, $3, $4) RETURNING id',
+      'INSERT INTO proficiency_assessments (user_id, language, level, score) VALUES ($1, $2, $3, $4) RETURNING id',
       [userId, language, level, score]
     );
     
