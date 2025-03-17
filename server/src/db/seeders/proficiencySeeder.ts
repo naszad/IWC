@@ -8,6 +8,17 @@ async function seedProficiencyData() {
   try {
     console.log('Seeding proficiency data...');
 
+    // Clear existing proficiency data
+    await pool.query(`
+      DELETE FROM skill_recommendations CASCADE;
+      DELETE FROM skill_progress CASCADE;
+      DELETE FROM skill_breakdowns CASCADE;
+      DELETE FROM proficiency_assessments CASCADE;
+      DELETE FROM activities CASCADE;
+      DELETE FROM achievements CASCADE;
+      DELETE FROM language_proficiency CASCADE;
+    `);
+
     // Get all users
     const usersResult = await pool.query('SELECT id FROM users');
     const users = usersResult.rows;
