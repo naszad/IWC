@@ -10,7 +10,15 @@ export const getUserProficiencyData = async (): Promise<ProficiencyData> => {
     const token = localStorage.getItem('auth_token');
     console.log('Auth token:', token ? 'Present' : 'Missing');
     
-    const response = await api.get('/api/proficiency/profile');
+    // Get the current user's ID from localStorage
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    if (!user || !user.id) {
+      throw new Error('User not found');
+    }
+    
+    const response = await api.get(`/api/proficiency/user/${user.id}`);
     console.log('Proficiency data response:', response.data);
     return response.data;
   } catch (error) {

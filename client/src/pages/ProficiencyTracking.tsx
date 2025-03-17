@@ -176,6 +176,9 @@ const ProficiencyTracking = () => {
     const fetchProficiencyData = async () => {
       try {
         setLoading(true);
+        if (!user?.id) {
+          throw new Error('User not found');
+        }
         const data = await getUserProficiencyData();
         setProficiencyData(data);
         setError(null);
@@ -200,8 +203,13 @@ const ProficiencyTracking = () => {
       }
     };
     
-    fetchProficiencyData();
-  }, []);
+    if (user?.id) {
+      fetchProficiencyData();
+    } else {
+      setLoading(false);
+      setError('Please log in to view your proficiency data.');
+    }
+  }, [user]);
 
   const handleSkillTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSkillTabValue(newValue);
