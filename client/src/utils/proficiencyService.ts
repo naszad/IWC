@@ -18,7 +18,7 @@ export const getUserProficiencyData = async (): Promise<ProficiencyData> => {
       throw new Error('User not found');
     }
     
-    const response = await api.get(`/api/proficiency/user/${user.id}`);
+    const response = await api.get(`/proficiency/user/${user.id}`);
     console.log('Proficiency data response:', response.data);
     return response.data;
   } catch (error) {
@@ -32,7 +32,7 @@ export const getUserProficiencyData = async (): Promise<ProficiencyData> => {
  */
 export const getUserProficiencyById = async (userId: number): Promise<ProficiencyData> => {
   try {
-    const response = await api.get(`/api/proficiency/user/${userId}`);
+    const response = await api.get(`/proficiency/user/${userId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching proficiency data for user ${userId}:`, error);
@@ -45,7 +45,7 @@ export const getUserProficiencyById = async (userId: number): Promise<Proficienc
  */
 export const getUserLanguageProficiency = async (userId: number, language: string) => {
   try {
-    const response = await api.get(`/api/proficiency/user/${userId}/language/${language}`);
+    const response = await api.get(`/proficiency/user/${userId}/language/${language}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching ${language} proficiency for user ${userId}:`, error);
@@ -58,7 +58,7 @@ export const getUserLanguageProficiency = async (userId: number, language: strin
  */
 export const initializeLanguageProficiency = async (userId: number, language: string, startLevel: string) => {
   try {
-    const response = await api.post('/api/proficiency/initialize', {
+    const response = await api.post('/proficiency/initialize', {
       userId,
       language,
       startLevel
@@ -75,7 +75,7 @@ export const initializeLanguageProficiency = async (userId: number, language: st
  */
 export const recordAssessment = async (userId: number, language: string, level: string, score: number) => {
   try {
-    const response = await api.post('/api/proficiency/assessment', {
+    const response = await api.post('/proficiency/assessment', {
       userId,
       language,
       level,
@@ -102,7 +102,7 @@ export const recordActivity = async (
   score?: number
 ) => {
   try {
-    const response = await api.post('/api/proficiency/activity', {
+    const response = await api.post('/proficiency/activity', {
       userId,
       language,
       type,
@@ -166,7 +166,7 @@ export const updateSkillRecommendation = async (
  */
 export const updateStudyHours = async (userId: number, language: string, hours: number) => {
   try {
-    const response = await api.post('/api/proficiency/study-hours', {
+    const response = await api.post('/proficiency/study-hours', {
       userId,
       language,
       hours
