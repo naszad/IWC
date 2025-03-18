@@ -10,9 +10,9 @@ export const getUserProficiencyData = async (): Promise<ProficiencyData> => {
     const token = localStorage.getItem('auth_token');
     console.log('Auth token:', token ? 'Present' : 'Missing');
     
-    // Get the current user's data from the /auth/me endpoint
-    const userResponse = await api.get('/auth/me');
-    const user = userResponse.data.user;
+    // Get the current user's ID from localStorage
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
     
     if (!user || !user.id) {
       throw new Error('User not found');
