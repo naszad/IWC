@@ -64,7 +64,7 @@ async function seedProficiencyData() {
         const numAssessments = Math.floor(Math.random() * 5) + 3;
         for (let i = 0; i < numAssessments; i++) {
           await pool.query(
-            `INSERT INTO proficiency_assessments (user_id, language, date, level, score) 
+            `INSERT INTO assessments (user_id, language, date, level, score) 
              VALUES ($1, $2, $3, $4, $5)`,
             [
               user.id,
