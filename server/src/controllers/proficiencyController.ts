@@ -20,8 +20,7 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     // Validate user ID
     if (!userId) {
       console.log('No user ID found');
-      res.status(400).json({ error: 'User ID is required' });
-      return;
+      return res.status(400).json({ error: 'User ID is required' });
     }
     
     // Check if user exists
@@ -30,8 +29,7 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     
     if (userResult.rows.length === 0) {
       console.log('User not found');
-      res.status(404).json({ error: 'User not found' });
-      return;
+      return res.status(404).json({ error: 'User not found' });
     }
     
     const user = userResult.rows[0];
@@ -39,7 +37,7 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     // Get English proficiency data
     const proficiencyData = await getLanguageProficiencyData(userId, ENGLISH_LANGUAGE);
     
-    res.status(200).json({
+    return res.status(200).json({
       userId: user.id,
       username: user.username,
       ...proficiencyData
@@ -47,7 +45,7 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     
   } catch (error) {
     console.error('Error fetching English proficiency data:', error);
-    res.status(500).json({ error: 'Failed to fetch English proficiency data' });
+    return res.status(500).json({ error: 'Failed to fetch English proficiency data' });
   }
 };
 
@@ -211,8 +209,7 @@ export const recordAssessment = async (req: Request, res: Response) => {
     const { userId, level, score } = req.body;
     
     if (!userId || !level || score === undefined) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
     // Insert the assessment record
@@ -232,14 +229,14 @@ export const recordAssessment = async (req: Request, res: Response) => {
     // Update skill breakdown based on assessment (simplified for example)
     await updateSkillBreakdown(userId, ENGLISH_LANGUAGE, score);
     
-    res.status(201).json({ 
+    return res.status(201).json({ 
       id: result.rows[0].id,
       message: 'Assessment recorded successfully' 
     });
     
   } catch (error) {
     console.error('Error recording assessment:', error);
-    res.status(500).json({ error: 'Failed to record assessment' });
+    return res.status(500).json({ error: 'Failed to record assessment' });
   }
 };
 
@@ -251,8 +248,7 @@ export const initializeLanguageProficiency = async (req: Request, res: Response)
     const { userId, startLevel } = req.body;
     
     if (!userId || !startLevel) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
     // Check if English proficiency already exists
@@ -262,8 +258,7 @@ export const initializeLanguageProficiency = async (req: Request, res: Response)
     );
     
     if (existingResult.rows.length > 0) {
-      res.status(409).json({ error: 'English proficiency already initialized' });
-      return;
+      return res.status(409).json({ error: 'English proficiency already initialized' });
     }
     
     // Initialize English proficiency
@@ -283,14 +278,14 @@ export const initializeLanguageProficiency = async (req: Request, res: Response)
       [userId, ENGLISH_LANGUAGE]
     );
     
-    res.status(201).json({ 
+    return res.status(201).json({ 
       id: result.rows[0].id,
       message: 'English proficiency initialized successfully' 
     });
     
   } catch (error) {
     console.error('Error initializing English proficiency:', error);
-    res.status(500).json({ error: 'Failed to initialize English proficiency' });
+    return res.status(500).json({ error: 'Failed to initialize English proficiency' });
   }
 };
 
@@ -339,23 +334,130 @@ const updateSkillBreakdown = async (
 };
 
 /**
- * Record progress for a specific skill
+ * Record a new skill progress entry
  */
 const recordSkillProgress = async (
-  userId: number,
-  language: string,
-  skill: SkillType,
+  userId: number, 
+  language: string, 
+  skill: SkillType, 
   score: number
 ) => {
   try {
+    // Record new skill progress
     await pool.query(
       `INSERT INTO skill_progress 
         (user_id, language, skill, score) 
        VALUES ($1, $2, $3, $4)`,
       [userId, language, skill, score]
     );
+    
+    // Update skill breakdown
+    await pool.query(
+      `UPDATE skill_breakdowns 
+       SET ${skill} = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $2 AND language = $3`,
+      [score, userId, language]
+    );
+    
+    // If score is particularly high or low, potentially create a recommendation
+    if (score >= 85) {
+      const recommendationText = getRecommendationForStrongSkill(skill);
+      await updateSkillRecommendationInternal(userId, language, skill, recommendationText, 'strong');
+    } else if (score <= 50) {
+      const recommendationText = getRecommendationForWeakSkill(skill);
+      await updateSkillRecommendationInternal(userId, language, skill, recommendationText, 'weak');
+    }
+    
   } catch (error) {
     console.error('Error recording skill progress:', error);
     throw error;
+  }
+};
+
+/**
+ * Update skill recommendations without API response handling
+ */
+const updateSkillRecommendationInternal = async (
+  userId: number, 
+  language: string, 
+  skill: SkillType, 
+  recommendation: string, 
+  type: 'weak' | 'strong'
+) => {
+  try {
+    // Check if recommendation already exists
+    const existingResult = await pool.query(
+      'SELECT id FROM skill_recommendations WHERE user_id = $1 AND language = $2 AND skill = $3 AND type = $4',
+      [userId, language, skill, type]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      // Update existing recommendation
+      await pool.query(
+        `UPDATE skill_recommendations 
+         SET recommendation = $1, updated_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $2 AND language = $3 AND skill = $4 AND type = $5`,
+        [recommendation, userId, language, skill, type]
+      );
+    } else {
+      // Insert new recommendation
+      await pool.query(
+        `INSERT INTO skill_recommendations 
+          (user_id, language, skill, recommendation, type) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, language, skill, recommendation, type]
+      );
+    }
+  } catch (error) {
+    console.error('Error updating skill recommendation internally:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get recommendation text for a strong skill
+ */
+const getRecommendationForStrongSkill = (skill: SkillType): string => {
+  switch (skill) {
+    case 'vocabulary':
+      return 'Continue expanding specialized vocabulary';
+    case 'grammar':
+      return 'Move on to more complex grammatical structures';
+    case 'reading':
+      return 'Try more challenging authentic texts';
+    case 'listening':
+      return 'Move to more advanced listening materials';
+    case 'speaking':
+      return 'Practice with native speakers on more complex topics';
+    case 'writing':
+      return 'Focus on writing longer, more complex texts';
+    case 'comprehensive':
+      return 'Consider preparing for a higher level proficiency exam';
+    default:
+      return 'Continue practicing to maintain your strength';
+  }
+};
+
+/**
+ * Get recommendation text for a weak skill
+ */
+const getRecommendationForWeakSkill = (skill: SkillType): string => {
+  switch (skill) {
+    case 'vocabulary':
+      return 'Focus on expanding your everyday vocabulary';
+    case 'grammar':
+      return 'Review basic grammatical structures';
+    case 'reading':
+      return 'Practice with shorter, simpler texts';
+    case 'listening':
+      return 'Try podcasts designed for language learners';
+    case 'speaking':
+      return 'Practice with conversation partners more frequently';
+    case 'writing':
+      return 'Focus on structuring paragraphs and essays';
+    case 'comprehensive':
+      return 'Consider taking a structured assessment to build your foundation';
+    default:
+      return 'Schedule regular practice sessions to improve';
   }
 }; 
