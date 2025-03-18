@@ -164,8 +164,6 @@ const ProficiencyTracking = () => {
   const theme = useTheme();
   const { user } = useAuth();
   
-  console.log('ProficiencyTracking - Current user:', user);
-  
   // Add state for tracking which skills to display in the combined graph
   const [selectedSkills, setSelectedSkills] = useState<SkillType[]>([
     'vocabulary', 'grammar', 'reading', 'listening', 'speaking', 'writing'
