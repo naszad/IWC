@@ -1,23 +1,43 @@
-import express from 'express';
-import { 
-  getProficiencyData, 
-  recordAssessment, 
-  initializeLanguageProficiency 
+import express, { Response, Request, NextFunction, RequestHandler } from 'express';
+import {
+  getProficiencyData,
+  recordAssessment,
+  recordActivity,
+  recordAchievement,
+  updateSkillRecommendation,
+  updateStudyHours,
+  initializeLanguageProficiency
 } from '../controllers/proficiencyController';
-import { auth } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { ProficiencyRequest } from '../types/proficiency';
 
 const router = express.Router();
 
-// Get English proficiency data for a user
-router.get('/user/:userId/english', auth, getProficiencyData);
+// Apply authentication middleware to all proficiency routes
+router.use(authenticate);
 
-// Get current user's English proficiency data
-router.get('/me/english', auth, getProficiencyData);
+// Error handler wrapper
+const catchAsync = (fn: any): RequestHandler => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await fn(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  };
+};
 
-// Initialize English proficiency tracking
-router.post('/initialize', auth, initializeLanguageProficiency);
+// Get proficiency data
+router.get('/user/:userId', catchAsync(getProficiencyData));
+router.get('/user/:userId/language/:language', catchAsync(getProficiencyData));
+router.get('/profile', catchAsync(getProficiencyData)); // Get current logged-in user's data
 
-// Record an English assessment result
-router.post('/assessment', auth, recordAssessment);
+// Record new data
+router.post('/assessment', catchAsync(recordAssessment));
+router.post('/activity', catchAsync(recordActivity));
+router.post('/achievement', catchAsync(recordAchievement));
+router.post('/recommendation', catchAsync(updateSkillRecommendation));
+router.post('/study-hours', catchAsync(updateStudyHours));
+router.post('/initialize', catchAsync(initializeLanguageProficiency));
 
 export default router; 
