@@ -1,19 +1,19 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { ProficiencyRequest, SkillType } from '../types/proficiency';
-
-const ENGLISH_LANGUAGE = 'english';
+import { ProficiencyRequest, LanguageProficiency, SkillType } from '../types/proficiency';
 
 /**
- * Get a user's English proficiency data
+ * Get a user's proficiency data for all languages or a specific language
  */
 export const getProficiencyData = async (req: ProficiencyRequest, res: Response) => {
   try {
-    console.log('Received English proficiency data request');
+    console.log('Received proficiency data request');
     console.log('User:', req.user);
+    console.log('Params:', req.params);
     
     // Get user ID from request params or from authenticated user
     const userId = req.params.userId ? parseInt(req.params.userId) : req.user?.id;
+    const language = req.params.language;
     
     console.log('Using userId:', userId);
     
@@ -34,61 +34,50 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     
     const user = userResult.rows[0];
     
-    // Get English proficiency data
-    const proficiencyData = await getLanguageProficiencyData(userId, ENGLISH_LANGUAGE);
+    // Get languages the user is learning
+    const languagesQuery = language 
+      ? 'SELECT language FROM language_proficiency WHERE user_id = $1 AND language = $2'
+      : 'SELECT language FROM language_proficiency WHERE user_id = $1';
+    
+    const languageParams = language ? [userId, language] : [userId];
+    const languagesResult = await pool.query(languagesQuery, languageParams);
+    
+    if (languagesResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: language 
+          ? `User is not learning ${language}` 
+          : 'User is not learning any languages' 
+      });
+    }
+    
+    // Get proficiency data for each language
+    const languages = await Promise.all(
+      languagesResult.rows.map(async (row) => {
+        return await getLanguageProficiencyData(userId, row.language);
+      })
+    );
     
     return res.status(200).json({
       userId: user.id,
       username: user.username,
-      ...proficiencyData
+      languages
     });
     
   } catch (error) {
-    console.error('Error fetching English proficiency data:', error);
-    return res.status(500).json({ error: 'Failed to fetch English proficiency data' });
+    console.error('Error fetching proficiency data:', error);
+    return res.status(500).json({ error: 'Failed to fetch proficiency data' });
   }
 };
 
 /**
- * Get proficiency data for English
+ * Get proficiency data for a specific language
  */
-const getLanguageProficiencyData = async (userId: number, language: string) => {
+const getLanguageProficiencyData = async (userId: number, language: string): Promise<LanguageProficiency> => {
   // Get base language proficiency data
   const proficiencyResult = await pool.query(
     'SELECT * FROM language_proficiency WHERE user_id = $1 AND language = $2',
     [userId, language]
   );
-  
-  if (proficiencyResult.rows.length === 0) {
-    return {
-      currentLevel: 'A1',
-      startLevel: 'A1',
-      progressPercentage: 0,
-      startDate: new Date().toISOString().split('T')[0],
-      studyHours: 0,
-      completedQuestions: 0,
-      vocabMastered: 0,
-      assessmentHistory: [],
-      skillBreakdown: {
-        vocabulary: 0,
-        grammar: 0,
-        reading: 0,
-        listening: 0,
-        speaking: 0,
-        writing: 0
-      },
-      skillProgressHistory: {
-        vocabulary: [],
-        grammar: [],
-        reading: [],
-        listening: [],
-        speaking: [],
-        writing: []
-      },
-      recentActivities: [],
-      achievements: []
-    };
-  }
   
   const proficiencyData = proficiencyResult.rows[0];
   
@@ -159,6 +148,7 @@ const getLanguageProficiencyData = async (userId: number, language: string) => {
   
   // Format the data according to the client's expected structure
   return {
+    language,
     currentLevel: proficiencyData.current_level,
     startLevel: proficiencyData.start_level,
     progressPercentage: proficiencyData.progress_percentage,
@@ -172,7 +162,6 @@ const getLanguageProficiencyData = async (userId: number, language: string) => {
       score: row.score
     })),
     skillBreakdown,
-    skillProgressHistory,
     recentActivities: activitiesResult.rows.map(row => ({
       id: row.id,
       type: row.type,
@@ -206,16 +195,16 @@ const getLanguageProficiencyData = async (userId: number, language: string) => {
  */
 export const recordAssessment = async (req: Request, res: Response) => {
   try {
-    const { userId, level, score } = req.body;
+    const { userId, language, level, score } = req.body;
     
-    if (!userId || !level || score === undefined) {
+    if (!userId || !language || !level || score === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
     // Insert the assessment record
     const result = await pool.query(
       'INSERT INTO proficiency_assessments (user_id, language, level, score) VALUES ($1, $2, $3, $4) RETURNING id',
-      [userId, ENGLISH_LANGUAGE, level, score]
+      [userId, language, level, score]
     );
     
     // Update the user's current level and progress percentage
@@ -223,11 +212,11 @@ export const recordAssessment = async (req: Request, res: Response) => {
       `UPDATE language_proficiency 
        SET current_level = $1, updated_at = CURRENT_TIMESTAMP 
        WHERE user_id = $2 AND language = $3`,
-      [level, userId, ENGLISH_LANGUAGE]
+      [level, userId, language]
     );
     
     // Update skill breakdown based on assessment (simplified for example)
-    await updateSkillBreakdown(userId, ENGLISH_LANGUAGE, score);
+    await updateSkillBreakdown(userId, language, score);
     
     return res.status(201).json({ 
       id: result.rows[0].id,
@@ -241,33 +230,217 @@ export const recordAssessment = async (req: Request, res: Response) => {
 };
 
 /**
- * Initialize English proficiency tracking
+ * Record a new activity
  */
-export const initializeLanguageProficiency = async (req: Request, res: Response) => {
+export const recordActivity = async (req: Request, res: Response) => {
   try {
-    const { userId, startLevel } = req.body;
+    const { userId, language, type, name, result: activityResult, progress, score, skill } = req.body;
     
-    if (!userId || !startLevel) {
+    if (!userId || !language || !type || !name) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Check if English proficiency already exists
+    // Insert the activity record
+    const result = await pool.query(
+      `INSERT INTO activities 
+        (user_id, language, type, name, result, progress, score, skill) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       RETURNING id`,
+      [userId, language, type, name, activityResult, progress, score, skill]
+    );
+    
+    // Update completed questions count
+    await pool.query(
+      `UPDATE language_proficiency 
+       SET completed_questions = completed_questions + 1, updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $1 AND language = $2`,
+      [userId, language]
+    );
+    
+    // If it's a vocabulary activity with a score, update vocab_mastered
+    if (skill === 'vocabulary' && score && score > 70) {
+      await pool.query(
+        `UPDATE language_proficiency 
+         SET vocab_mastered = vocab_mastered + 5, updated_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $1 AND language = $2`,
+        [userId, language]
+      );
+    }
+    
+    // If there's a skill and score, update skill progress
+    if (skill && score) {
+      await recordSkillProgress(userId, language, skill as SkillType, score);
+    }
+    
+    return res.status(201).json({ 
+      id: result.rows[0].id,
+      message: 'Activity recorded successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error recording activity:', error);
+    return res.status(500).json({ error: 'Failed to record activity' });
+  }
+};
+
+/**
+ * Record achievement for a user
+ */
+export const recordAchievement = async (req: Request, res: Response) => {
+  try {
+    const { userId, language, name, description, skill } = req.body;
+    
+    if (!userId || !language || !name || !description) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Check if the achievement already exists
     const existingResult = await pool.query(
-      'SELECT id FROM language_proficiency WHERE user_id = $1 AND language = $2',
-      [userId, ENGLISH_LANGUAGE]
+      'SELECT id FROM achievements WHERE user_id = $1 AND language = $2 AND name = $3',
+      [userId, language, name]
     );
     
     if (existingResult.rows.length > 0) {
-      return res.status(409).json({ error: 'English proficiency already initialized' });
+      return res.status(409).json({ error: 'Achievement already recorded' });
     }
     
-    // Initialize English proficiency
+    // Insert the achievement record
+    const result = await pool.query(
+      `INSERT INTO achievements 
+        (user_id, language, name, description, skill) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id`,
+      [userId, language, name, description, skill]
+    );
+    
+    return res.status(201).json({ 
+      id: result.rows[0].id,
+      message: 'Achievement recorded successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error recording achievement:', error);
+    return res.status(500).json({ error: 'Failed to record achievement' });
+  }
+};
+
+/**
+ * Add or update a skill recommendation
+ */
+export const updateSkillRecommendation = async (req: Request, res: Response) => {
+  try {
+    const { userId, language, skill, recommendation, type } = req.body;
+    
+    if (!userId || !language || !skill || !recommendation || !type) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    if (type !== 'weak' && type !== 'strong') {
+      return res.status(400).json({ error: 'Type must be either "weak" or "strong"' });
+    }
+    
+    // Check if recommendation already exists
+    const existingResult = await pool.query(
+      'SELECT id FROM skill_recommendations WHERE user_id = $1 AND language = $2 AND skill = $3 AND type = $4',
+      [userId, language, skill, type]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      // Update existing recommendation
+      await pool.query(
+        `UPDATE skill_recommendations 
+         SET recommendation = $1, updated_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $2 AND language = $3 AND skill = $4 AND type = $5`,
+        [recommendation, userId, language, skill, type]
+      );
+      
+      return res.status(200).json({ 
+        id: existingResult.rows[0].id,
+        message: 'Skill recommendation updated successfully' 
+      });
+    } else {
+      // Insert new recommendation
+      const result = await pool.query(
+        `INSERT INTO skill_recommendations 
+          (user_id, language, skill, recommendation, type) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING id`,
+        [userId, language, skill, recommendation, type]
+      );
+      
+      return res.status(201).json({ 
+        id: result.rows[0].id,
+        message: 'Skill recommendation added successfully' 
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error updating skill recommendation:', error);
+    return res.status(500).json({ error: 'Failed to update skill recommendation' });
+  }
+};
+
+/**
+ * Update study hours
+ */
+export const updateStudyHours = async (req: Request, res: Response) => {
+  try {
+    const { userId, language, hours } = req.body;
+    
+    if (!userId || !language || hours === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    if (hours <= 0) {
+      return res.status(400).json({ error: 'Hours must be a positive number' });
+    }
+    
+    // Update study hours
+    await pool.query(
+      `UPDATE language_proficiency 
+       SET study_hours = study_hours + $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $2 AND language = $3`,
+      [hours, userId, language]
+    );
+    
+    return res.status(200).json({ 
+      message: 'Study hours updated successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error updating study hours:', error);
+    return res.status(500).json({ error: 'Failed to update study hours' });
+  }
+};
+
+/**
+ * Initialize proficiency tracking for a new language
+ */
+export const initializeLanguageProficiency = async (req: Request, res: Response) => {
+  try {
+    const { userId, language, startLevel } = req.body;
+    
+    if (!userId || !language || !startLevel) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Check if language proficiency already exists
+    const existingResult = await pool.query(
+      'SELECT id FROM language_proficiency WHERE user_id = $1 AND language = $2',
+      [userId, language]
+    );
+    
+    if (existingResult.rows.length > 0) {
+      return res.status(409).json({ error: 'Language proficiency already initialized' });
+    }
+    
+    // Initialize language proficiency
     const result = await pool.query(
       `INSERT INTO language_proficiency 
         (user_id, language, current_level, start_level) 
        VALUES ($1, $2, $3, $4) 
        RETURNING id`,
-      [userId, ENGLISH_LANGUAGE, startLevel, startLevel]
+      [userId, language, startLevel, startLevel]
     );
     
     // Initialize skill breakdown with zeros
@@ -275,63 +448,21 @@ export const initializeLanguageProficiency = async (req: Request, res: Response)
       `INSERT INTO skill_breakdowns 
         (user_id, language, vocabulary, grammar, reading, listening, speaking, writing) 
        VALUES ($1, $2, 0, 0, 0, 0, 0, 0)`,
-      [userId, ENGLISH_LANGUAGE]
+      [userId, language]
     );
     
     return res.status(201).json({ 
       id: result.rows[0].id,
-      message: 'English proficiency initialized successfully' 
+      message: 'Language proficiency initialized successfully' 
     });
     
   } catch (error) {
-    console.error('Error initializing English proficiency:', error);
-    return res.status(500).json({ error: 'Failed to initialize English proficiency' });
+    console.error('Error initializing language proficiency:', error);
+    return res.status(500).json({ error: 'Failed to initialize language proficiency' });
   }
 };
 
 // Helper functions
-
-/**
- * Update skill breakdown based on assessment score
- */
-const updateSkillBreakdown = async (
-  userId: number, 
-  language: string, 
-  score: number
-) => {
-  try {
-    // For simplicity, distribute the score across skills
-    // In a real system, you'd have separate scores for each skill from the assessment
-    const vocabScore = Math.round(score * 0.8 + Math.random() * 20);
-    const grammarScore = Math.round(score * 0.8 + Math.random() * 20);
-    const readingScore = Math.round(score * 0.8 + Math.random() * 20);
-    const listeningScore = Math.round(score * 0.8 + Math.random() * 20);
-    const speakingScore = Math.round(score * 0.7 + Math.random() * 20);
-    const writingScore = Math.round(score * 0.7 + Math.random() * 20);
-    
-    // Update skill breakdown
-    await pool.query(
-      `UPDATE skill_breakdowns 
-       SET vocabulary = $1, grammar = $2, reading = $3, 
-           listening = $4, speaking = $5, writing = $6, 
-           updated_at = CURRENT_TIMESTAMP 
-       WHERE user_id = $7 AND language = $8`,
-      [vocabScore, grammarScore, readingScore, listeningScore, speakingScore, writingScore, userId, language]
-    );
-    
-    // Record progress for each skill
-    await recordSkillProgress(userId, language, 'vocabulary', vocabScore);
-    await recordSkillProgress(userId, language, 'grammar', grammarScore);
-    await recordSkillProgress(userId, language, 'reading', readingScore);
-    await recordSkillProgress(userId, language, 'listening', listeningScore);
-    await recordSkillProgress(userId, language, 'speaking', speakingScore);
-    await recordSkillProgress(userId, language, 'writing', writingScore);
-    
-  } catch (error) {
-    console.error('Error updating skill breakdown:', error);
-    throw error;
-  }
-};
 
 /**
  * Record a new skill progress entry
@@ -410,6 +541,48 @@ const updateSkillRecommendationInternal = async (
     }
   } catch (error) {
     console.error('Error updating skill recommendation internally:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update skill breakdown based on assessment score
+ */
+const updateSkillBreakdown = async (
+  userId: number, 
+  language: string, 
+  score: number
+) => {
+  try {
+    // For simplicity, distribute the score across skills
+    // In a real system, you'd have separate scores for each skill from the assessment
+    const vocabScore = Math.round(score * 0.8 + Math.random() * 20);
+    const grammarScore = Math.round(score * 0.8 + Math.random() * 20);
+    const readingScore = Math.round(score * 0.8 + Math.random() * 20);
+    const listeningScore = Math.round(score * 0.8 + Math.random() * 20);
+    const speakingScore = Math.round(score * 0.7 + Math.random() * 20);
+    const writingScore = Math.round(score * 0.7 + Math.random() * 20);
+    
+    // Update skill breakdown
+    await pool.query(
+      `UPDATE skill_breakdowns 
+       SET vocabulary = $1, grammar = $2, reading = $3, 
+           listening = $4, speaking = $5, writing = $6, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $7 AND language = $8`,
+      [vocabScore, grammarScore, readingScore, listeningScore, speakingScore, writingScore, userId, language]
+    );
+    
+    // Record progress for each skill
+    await recordSkillProgress(userId, language, 'vocabulary', vocabScore);
+    await recordSkillProgress(userId, language, 'grammar', grammarScore);
+    await recordSkillProgress(userId, language, 'reading', readingScore);
+    await recordSkillProgress(userId, language, 'listening', listeningScore);
+    await recordSkillProgress(userId, language, 'speaking', speakingScore);
+    await recordSkillProgress(userId, language, 'writing', writingScore);
+    
+  } catch (error) {
+    console.error('Error updating skill breakdown:', error);
     throw error;
   }
 };
