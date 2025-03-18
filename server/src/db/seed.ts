@@ -1,5 +1,4 @@
 import seedAssessments from './seeders/assessmentSeeder';
-import seedProficiencyData from './seeders/proficiencySeeder';
 
 async function seedDatabase() {
   try {
@@ -7,9 +6,6 @@ async function seedDatabase() {
     
     // Seed assessments
     await seedAssessments();
-    
-    // Seed proficiency data
-    await seedProficiencyData();
     
     // Add other seeders here if needed
     // e.g., await seedUsers();
