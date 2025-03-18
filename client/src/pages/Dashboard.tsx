@@ -123,24 +123,7 @@ const Dashboard = () => {
           setProficiencyData({
             userId: user?.id || 0,
             username: user?.username || '',
-            currentLevel: 'A1',
-            startLevel: 'A1',
-            progressPercentage: 0,
-            startDate: new Date().toISOString(),
-            studyHours: 0,
-            completedQuestions: 0,
-            vocabMastered: 0,
-            assessmentHistory: [],
-            skillBreakdown: {
-              vocabulary: 0,
-              grammar: 0,
-              reading: 0,
-              listening: 0,
-              speaking: 0,
-              writing: 0
-            },
-            recentActivities: [],
-            achievements: []
+            languages: []
           });
           setProficiencyError(null);
         } else {
@@ -441,72 +424,74 @@ const Dashboard = () => {
                   Retry
                 </Button>
               </Box>
-            ) : proficiencyData ? (
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    English
-                  </Typography>
-                  <Chip 
-                    label={proficiencyData.currentLevel} 
-                    size="small" 
-                    color="primary" 
-                    sx={{ height: 20, minWidth: 32 }} 
+            ) : proficiencyData && proficiencyData.languages.length > 0 ? (
+              proficiencyData.languages.map((lang, index) => (
+                <Box key={index}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {lang.language}
+                    </Typography>
+                    <Chip 
+                      label={lang.currentLevel} 
+                      size="small" 
+                      color="primary" 
+                      sx={{ height: 20, minWidth: 32 }} 
+                    />
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={lang.progressPercentage}
+                    sx={{ height: 8, borderRadius: 4, mb: 1, mt: 1 }}
                   />
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={proficiencyData.progressPercentage}
-                  sx={{ height: 8, borderRadius: 4, mb: 1, mt: 1 }}
-                />
-                <Typography variant="body2" sx={{ mb: 2 }}>
-                  {proficiencyData.progressPercentage}% toward {proficiencyData.currentLevel === 'A1' ? 'A2' 
-                    : proficiencyData.currentLevel === 'A2' ? 'B1' 
-                    : proficiencyData.currentLevel === 'B1' ? 'B2'
-                    : proficiencyData.currentLevel === 'B2' ? 'C1'
-                    : proficiencyData.currentLevel === 'C1' ? 'C2'
-                    : 'Mastery'}
-                </Typography>
-                
-                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                  Skills Breakdown
-                </Typography>
-                
-                <Grid container spacing={1} sx={{ mb: 1 }}>
-                  {Object.entries(proficiencyData.skillBreakdown).map(([skill, value]) => (
-                    <Grid item xs={6} key={skill}>
-                      <Box sx={{ mb: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="caption" sx={{ textTransform: 'capitalize' }}>
-                            {skill}
-                          </Typography>
-                          <Typography variant="caption">
-                            {value}%
-                          </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {lang.progressPercentage}% toward {lang.currentLevel === 'A1' ? 'A2' 
+                      : lang.currentLevel === 'A2' ? 'B1' 
+                      : lang.currentLevel === 'B1' ? 'B2'
+                      : lang.currentLevel === 'B2' ? 'C1'
+                      : lang.currentLevel === 'C1' ? 'C2'
+                      : 'Mastery'}
+                  </Typography>
+                  
+                  <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                    Skills Breakdown
+                  </Typography>
+                  
+                  <Grid container spacing={1} sx={{ mb: 1 }}>
+                    {Object.entries(lang.skillBreakdown).map(([skill, value]) => (
+                      <Grid item xs={6} key={skill}>
+                        <Box sx={{ mb: 1 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" sx={{ textTransform: 'capitalize' }}>
+                              {skill}
+                            </Typography>
+                            <Typography variant="caption">
+                              {value}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={value} 
+                            sx={{ 
+                              height: 4, 
+                              borderRadius: 2,
+                              bgcolor: 'background.paper',
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: 
+                                  skill === 'vocabulary' ? '#4caf50' :
+                                  skill === 'grammar' ? '#2196f3' :
+                                  skill === 'reading' ? '#ff9800' :
+                                  skill === 'listening' ? '#9c27b0' :
+                                  skill === 'speaking' ? '#e91e63' :
+                                  '#00bcd4'
+                              }
+                            }}
+                          />
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={value} 
-                          sx={{ 
-                            height: 4, 
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            '& .MuiLinearProgress-bar': {
-                              bgcolor: 
-                                skill === 'vocabulary' ? '#4caf50' :
-                                skill === 'grammar' ? '#2196f3' :
-                                skill === 'reading' ? '#ff9800' :
-                                skill === 'listening' ? '#9c27b0' :
-                                skill === 'speaking' ? '#e91e63' :
-                                '#00bcd4'
-                            }
-                          }}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              ))
             ) : (
               <Box sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>
