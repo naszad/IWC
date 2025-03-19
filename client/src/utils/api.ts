@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Log the API URL that's being used from environment variable
+console.log('API URL from env:', process.env.REACT_APP_API_URL);
+
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api',
   headers: {
@@ -14,6 +17,8 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Log each API request URL for debugging
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {

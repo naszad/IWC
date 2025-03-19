@@ -121,104 +121,171 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
 
       const assessmentId = assessmentResult.rows[0].id;
       
-      // Insert questions - let PostgreSQL generate the IDs since it's a SERIAL column
+      // Prepare question data for bulk insertion
+      const questionValues = [];
+      const questionParams = [];
+      let paramCounter = 1;
+      
       for (let i = 0; i < assessmentData.questions.length; i++) {
         const question = assessmentData.questions[i];
-        
-        const questionResult = await client.query(`
-          INSERT INTO assessment_questions (
-            assessment_id, question_type, title, instructions, question_order
-          )
-          VALUES ($1, $2, $3, $4, $5)
-          RETURNING id
-        `, [
+        questionValues.push(`($${paramCounter++}, $${paramCounter++}, $${paramCounter++}, $${paramCounter++}, $${paramCounter++})`);
+        questionParams.push(
           assessmentId,
           question.type,
           question.title,
           question.instructions,
           i
-        ]);
-        
-        const questionId = questionResult.rows[0].id;
+        );
+      }
+      
+      // Bulk insert questions
+      const questionInsertQuery = `
+        INSERT INTO assessment_questions (
+          assessment_id, question_type, title, instructions, question_order
+        )
+        VALUES ${questionValues.join(', ')}
+        RETURNING id, question_order
+      `;
+      
+      const questionResult = await client.query(questionInsertQuery, questionParams);
+      const questionIds = questionResult.rows;
+      
+      // Process question-specific data
+      for (let i = 0; i < assessmentData.questions.length; i++) {
+        const question = assessmentData.questions[i];
+        const questionId = questionIds[i].id;
         
         // Insert type-specific question data
-        if (question.type === 'multiple-choice' && question.questions) {
+        if (question.type === 'multiple-choice' && question.questions && question.questions.length > 0) {
+          const mcQuestionValues = [];
+          const mcQuestionParams = [];
+          let mcParamCounter = 1;
+          
           for (const mcQuestion of question.questions) {
-            await client.query(`
-              INSERT INTO multiple_choice_questions (
-                id, question_id, text, options, correct_answer
-              )
-              VALUES ($1, $2, $3, $4, $5)
-            `, [
+            mcQuestionValues.push(`($${mcParamCounter++}, $${mcParamCounter++}, $${mcParamCounter++}, $${mcParamCounter++}, $${mcParamCounter++})`);
+            mcQuestionParams.push(
               mcQuestion.id || uuidv4(),
               questionId,
               mcQuestion.text,
               JSON.stringify(mcQuestion.options || []),
               mcQuestion.correctAnswer || ''
-            ]);
+            );
           }
-        } else if (question.type === 'matching' && question.matchItems) {
-          for (const item of question.matchItems) {
-            await client.query(`
-              INSERT INTO matching_items (
-                id, question_id, term, translation
+          
+          if (mcQuestionValues.length > 0) {
+            const mcInsertQuery = `
+              INSERT INTO multiple_choice_questions (
+                id, question_id, text, options, correct_answer
               )
-              VALUES ($1, $2, $3, $4)
-            `, [
+              VALUES ${mcQuestionValues.join(', ')}
+            `;
+            
+            await client.query(mcInsertQuery, mcQuestionParams);
+          }
+        } else if (question.type === 'matching' && question.matchItems && question.matchItems.length > 0) {
+          const matchingValues = [];
+          const matchingParams = [];
+          let matchParamCounter = 1;
+          
+          for (const item of question.matchItems) {
+            matchingValues.push(`($${matchParamCounter++}, $${matchParamCounter++}, $${matchParamCounter++}, $${matchParamCounter++})`);
+            matchingParams.push(
               item.id || uuidv4(),
               questionId,
               item.term,
               item.translation
-            ]);
+            );
           }
-        } else if (question.type === 'fill-in-blank' && question.sentences) {
-          for (const sentence of question.sentences) {
-            await client.query(`
-              INSERT INTO fill_in_blank_sentences (
-                id, question_id, text, answer
+          
+          if (matchingValues.length > 0) {
+            const matchingInsertQuery = `
+              INSERT INTO matching_items (
+                id, question_id, term, translation
               )
-              VALUES ($1, $2, $3, $4)
-            `, [
+              VALUES ${matchingValues.join(', ')}
+            `;
+            
+            await client.query(matchingInsertQuery, matchingParams);
+          }
+        } else if (question.type === 'fill-in-blank' && question.sentences && question.sentences.length > 0) {
+          const sentenceValues = [];
+          const sentenceParams = [];
+          let sentenceParamCounter = 1;
+          
+          for (const sentence of question.sentences) {
+            sentenceValues.push(`($${sentenceParamCounter++}, $${sentenceParamCounter++}, $${sentenceParamCounter++}, $${sentenceParamCounter++})`);
+            sentenceParams.push(
               sentence.id || uuidv4(),
               questionId,
               sentence.text,
               sentence.answer
-            ]);
+            );
           }
-        } else if (question.type === 'flashcards' && question.words) {
-          for (const word of question.words) {
-            await client.query(`
-              INSERT INTO flashcard_words (
-                id, question_id, term, translation, example
+          
+          if (sentenceValues.length > 0) {
+            const sentenceInsertQuery = `
+              INSERT INTO fill_in_blank_sentences (
+                id, question_id, text, answer
               )
-              VALUES ($1, $2, $3, $4, $5)
-            `, [
+              VALUES ${sentenceValues.join(', ')}
+            `;
+            
+            await client.query(sentenceInsertQuery, sentenceParams);
+          }
+        } else if (question.type === 'flashcards' && question.words && question.words.length > 0) {
+          const wordValues = [];
+          const wordParams = [];
+          let wordParamCounter = 1;
+          
+          for (const word of question.words) {
+            wordValues.push(`($${wordParamCounter++}, $${wordParamCounter++}, $${wordParamCounter++}, $${wordParamCounter++}, $${wordParamCounter++})`);
+            wordParams.push(
               word.id || uuidv4(),
               questionId,
               word.term,
               word.translation,
               word.example || null
-            ]);
+            );
+          }
+          
+          if (wordValues.length > 0) {
+            const wordInsertQuery = `
+              INSERT INTO flashcard_words (
+                id, question_id, term, translation, example
+              )
+              VALUES ${wordValues.join(', ')}
+            `;
+            
+            await client.query(wordInsertQuery, wordParams);
           }
         }
       }
       
-      // Insert materials if any
+      // Insert materials using bulk insertion if available
       if (assessmentData.materials && assessmentData.materials.length > 0) {
+        const materialValues = [];
+        const materialParams = [];
+        let materialParamCounter = 1;
+        
         for (const material of assessmentData.materials) {
-          await client.query(`
-            INSERT INTO assessment_materials (
-              id, assessment_id, name, url, size
-            )
-            VALUES ($1, $2, $3, $4, $5)
-          `, [
+          materialValues.push(`($${materialParamCounter++}, $${materialParamCounter++}, $${materialParamCounter++}, $${materialParamCounter++}, $${materialParamCounter++})`);
+          materialParams.push(
             uuidv4(),
             assessmentId,
             material.name,
             material.url,
             material.size
-          ]);
+          );
         }
+        
+        const materialInsertQuery = `
+          INSERT INTO assessment_materials (
+            id, assessment_id, name, url, size
+          )
+          VALUES ${materialValues.join(', ')}
+        `;
+        
+        await client.query(materialInsertQuery, materialParams);
       }
       
       // Commit transaction
@@ -435,52 +502,126 @@ export const startAssessment = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'You must be logged in to start an assessment' });
     }
     
-    // Check if assessment exists
-    const assessmentResult = await pool.query(
-      'SELECT * FROM assessments WHERE id = $1',
-      [id]
-    );
-    
-    if (assessmentResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Assessment not found' });
-    }
-    
-    const assessment = assessmentResult.rows[0];
-    
-    // Create a new attempt
-    const attemptId = uuidv4();
-    const now = new Date().toISOString();
-    
-    await pool.query(`
-      INSERT INTO assessment_attempts (
-        id, assessment_id, user_id, started_at
-      )
-      VALUES ($1, $2, $3, $4)
-    `, [attemptId, id, userId, now]);
-    
-    // Get questions for this assessment
-    const questionsResult = await pool.query(`
-      SELECT * FROM assessment_questions
-      WHERE assessment_id = $1
-      ORDER BY question_order
-    `, [id]);
-    
-    const questions = await Promise.all(
-      questionsResult.rows.map(async question => {
-        return await getFormattedQuestion(question);
-      })
-    );
-    
-    res.status(201).json({
-      attemptId,
-      assessment: {
-        id: assessment.id,
-        title: assessment.title,
-        description: assessment.description,
-        questions,
-        duration: assessment.duration
+    // Check if assessment exists and get questions in a single transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Get assessment details
+      const assessmentResult = await client.query(
+        'SELECT * FROM assessments WHERE id = $1',
+        [id]
+      );
+      
+      if (assessmentResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Assessment not found' });
       }
-    });
+      
+      const assessment = assessmentResult.rows[0];
+      
+      // Create a new attempt
+      const attemptId = uuidv4();
+      const now = new Date().toISOString();
+      
+      await client.query(`
+        INSERT INTO assessment_attempts (
+          id, assessment_id, user_id, started_at
+        )
+        VALUES ($1, $2, $3, $4)
+      `, [attemptId, id, userId, now]);
+      
+      // Get questions for this assessment
+      const questionsResult = await client.query(`
+        SELECT q.*, 
+          (SELECT json_agg(
+            json_build_object(
+              'id', mc.id, 
+              'text', mc.text, 
+              'options', mc.options, 
+              'correctAnswer', mc.correct_answer
+            )
+          ) FROM multiple_choice_questions mc WHERE mc.question_id = q.id) as multiple_choice_questions,
+          (SELECT json_agg(
+            json_build_object(
+              'id', s.id, 
+              'text', s.text, 
+              'answer', s.answer
+            )
+          ) FROM fill_in_blank_sentences s WHERE s.question_id = q.id) as fill_in_blank_sentences,
+          (SELECT json_agg(
+            json_build_object(
+              'id', m.id, 
+              'term', m.term, 
+              'translation', m.translation
+            )
+          ) FROM matching_items m WHERE m.question_id = q.id) as matching_items,
+          (SELECT json_agg(
+            json_build_object(
+              'id', f.id, 
+              'term', f.term, 
+              'translation', f.translation, 
+              'example', f.example
+            )
+          ) FROM flashcard_words f WHERE f.question_id = q.id) as flashcard_words
+        FROM assessment_questions q
+        WHERE q.assessment_id = $1
+        ORDER BY q.question_order
+      `, [id]);
+      
+      // Format the questions
+      const questions = questionsResult.rows.map(q => {
+        let formattedQuestion = {
+          id: q.id,
+          type: q.question_type,
+          title: q.title,
+          instructions: q.instructions
+        };
+        
+        // Add type-specific data
+        if (q.question_type === 'multiple-choice' && q.multiple_choice_questions) {
+          formattedQuestion = {
+            ...formattedQuestion,
+            questions: q.multiple_choice_questions
+          };
+        } else if (q.question_type === 'fill-in-blank' && q.fill_in_blank_sentences) {
+          formattedQuestion = {
+            ...formattedQuestion,
+            sentences: q.fill_in_blank_sentences
+          };
+        } else if (q.question_type === 'matching' && q.matching_items) {
+          formattedQuestion = {
+            ...formattedQuestion,
+            matchItems: q.matching_items
+          };
+        } else if (q.question_type === 'flashcards' && q.flashcard_words) {
+          formattedQuestion = {
+            ...formattedQuestion,
+            words: q.flashcard_words
+          };
+        }
+        
+        return formattedQuestion;
+      });
+      
+      await client.query('COMMIT');
+      
+      res.status(201).json({
+        attemptId,
+        assessment: {
+          id: assessment.id,
+          title: assessment.title,
+          description: assessment.description,
+          questions,
+          duration: assessment.duration
+        }
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error(`Error starting assessment ${req.params.id}:`, error);
     res.status(500).json({ error: 'Failed to start assessment' });
@@ -512,7 +653,7 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
     
     const attempt = attemptResult.rows[0];
     
-    // Check if assessment exists (removed creator check - students take assessments they didn't create)
+    // Check if assessment exists
     const assessmentResult = await pool.query(`
       SELECT * FROM assessments
       WHERE id = $1
@@ -521,8 +662,6 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
     if (assessmentResult.rows.length === 0) {
       return res.status(404).json({ error: 'Assessment not found' });
     }
-    
-    const assessment = assessmentResult.rows[0];
     
     // Get all questions for this assessment to check answers
     const questionsResult = await pool.query(`
@@ -538,31 +677,19 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
     let score = 0;
     let totalQuestions = questions.length;
     
+    // Create a map of question IDs for faster lookup
+    const questionsMap = new Map(
+      questions.map(q => [String(q.id), q])
+    );
+    
     // Process each answer
     for (const answer of answers) {
-      // Find matching question - handle both string and number ID formats
-      console.log(`Looking for question with ID: ${answer.questionId} (${typeof answer.questionId})`);
-      console.log('Available question IDs:', questions.map(q => `${q.id} (${typeof q.id})`));
+      // Use the map for O(1) lookup instead of array.find()
+      const question = questionsMap.get(String(answer.questionId));
       
-      const question = questions.find(q => 
-        q.id === answer.questionId || 
-        q.id === parseInt(answer.questionId) || 
-        String(q.id) === answer.questionId
-      );
-      
-      if (!question) {
-        console.log(`Question not found for ID: ${answer.questionId}`);
-        continue;
-      }
-      
-      console.log(`Found matching question:`, question);
+      if (!question) continue;
       
       let isCorrect = false;
-      
-      // Debug logs
-      console.log(`Processing answer for question ID ${answer.questionId}`);
-      console.log(`Question type: ${question.type}`);
-      console.log(`User answer: ${answer.answer}`);
       
       // Type guards for different question types
       const isMultipleChoice = question.type === 'multiple-choice' && 'questions' in question;
@@ -573,148 +700,69 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
       if (isMultipleChoice && question.questions && question.questions.length > 0) {
         // For multiple choice questions
         const mcQuestion = question.questions[0];
-        console.log(`MC question full details:`, JSON.stringify(mcQuestion, null, 2));
         
         if (mcQuestion.correctAnswer) {
           // Handle answers with "(correct)" suffix - strip it for comparison
           const normalizedUserAnswer = answer.answer.replace(/\s*\(correct\)\s*$/i, '').toLowerCase().trim();
           const normalizedCorrectAnswer = mcQuestion.correctAnswer.replace(/\s*\(correct\)\s*$/i, '').toLowerCase().trim();
           
-          console.log(`Normalized user answer: "${normalizedUserAnswer}"`);
-          console.log(`Normalized correct answer: "${normalizedCorrectAnswer}"`);
-          // Show exact comparison for debugging
-          console.log(`Direct comparison: "${normalizedUserAnswer}" === "${normalizedCorrectAnswer}" ? ${normalizedUserAnswer === normalizedCorrectAnswer}`);
-          console.log(`Loose comparison: "${normalizedUserAnswer}" == "${normalizedCorrectAnswer}" ? ${normalizedUserAnswer == normalizedCorrectAnswer}`);
+          // Compare normalized answers
+          isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
           
-          // Try multiple validation strategies to ensure we catch all valid answers
-          
-          // Strategy 1: Direct text comparison (case insensitive, trimmed)
-          let isCorrectStrategy1 = normalizedUserAnswer === normalizedCorrectAnswer;
-          console.log(`Strategy 1 (direct text) result: ${isCorrectStrategy1}`);
-          
-          // Strategy 2: Index-based comparison
-          let isCorrectStrategy2 = false;
-          
-          try {
-            const normalizedOptions = mcQuestion.options.map((opt: string) => 
-              opt.replace(/\s*\(correct\)\s*$/i, '').toLowerCase().trim()
-            );
-            
-            console.log(`Normalized options: ${JSON.stringify(normalizedOptions)}`);
-            
-            const userAnswerIndex = normalizedOptions.findIndex(
-              (opt: string) => opt === normalizedUserAnswer
-            );
-            
-            const correctAnswerIndex = normalizedOptions.findIndex(
-              (opt: string) => opt === normalizedCorrectAnswer
-            );
-            
-            console.log(`User answer index: ${userAnswerIndex}, Correct answer index: ${correctAnswerIndex}`);
-            
-            // Check if they selected the same option by position
-            isCorrectStrategy2 = (userAnswerIndex !== -1 && userAnswerIndex === correctAnswerIndex);
-            console.log(`Strategy 2 (index matching) result: ${isCorrectStrategy2}`);
-          } catch (error) {
-            console.error('Error in strategy 2:', error);
+          // If not correct by direct comparison, try option index-based comparison
+          if (!isCorrect && mcQuestion.options) {
+            try {
+              const normalizedOptions = mcQuestion.options.map((opt: string) => 
+                opt.replace(/\s*\(correct\)\s*$/i, '').toLowerCase().trim()
+              );
+              
+              const correctOptionIndex = normalizedOptions.indexOf(normalizedCorrectAnswer);
+              const userAnswerIndex = parseInt(normalizedUserAnswer);
+              
+              if (!isNaN(userAnswerIndex) && correctOptionIndex === userAnswerIndex) {
+                isCorrect = true;
+              }
+            } catch (err) {
+              // Continue with other strategies if this fails
+            }
           }
-          
-          // Strategy 3: Check if the correct answer is part of the user's answer (useful when "(correct)" is included)
-          let isCorrectStrategy3 = false;
-          
-          try {
-            // Check if user's answer contains the correct answer text
-            isCorrectStrategy3 = normalizedUserAnswer.includes(normalizedCorrectAnswer) || 
-                                 normalizedCorrectAnswer.includes(normalizedUserAnswer);
-            console.log(`Strategy 3 (substring match) result: ${isCorrectStrategy3}`);
-          } catch (error) {
-            console.error('Error in strategy 3:', error);
-          }
-          
-          // Strategy 4: Check if the user answered one of the options that contains "(correct)"
-          let isCorrectStrategy4 = false;
-          
-          try {
-            // Check if the user selected an option that has "(correct)" in it
-            isCorrectStrategy4 = answer.answer.toLowerCase().includes('(correct)');
-            console.log(`Strategy 4 (contains correct marker) result: ${isCorrectStrategy4}`);
-          } catch (error) {
-            console.error('Error in strategy 4:', error);
-          }
-          
-          // Combine all strategies
-          isCorrect = isCorrectStrategy1 || isCorrectStrategy2 || isCorrectStrategy3 || isCorrectStrategy4;
-          console.log(`Final result - Answer is correct: ${isCorrect}`);
         }
-      } 
-      else if (isFillInBlank && question.sentences && question.sentences.length > 0) {
-        // For fill-in-blank questions
-        console.log(`Processing fill-in-blank question with ID ${question.id}`);
-        console.log(`Looking for sentence with ID: ${answer.questionId}`);
+      } else if (isFillInBlank && question.sentences) {
+        // For fill-in-blank questions, find the matching sentence
+        const sentence = question.sentences.find((s: any) => String(s.id) === String(answer.questionId));
         
-        // Try to find the sentence directly by ID first
-        let sentence = question.sentences.find(s => 
-          s.id === answer.questionId || 
-          s.id === parseInt(answer.questionId) || 
-          String(s.id) === answer.questionId
-        );
-        
-        // If sentence not found by direct ID match, use the first sentence as fallback
-        if (!sentence && question.sentences.length > 0) {
-          console.log(`Sentence not found by ID, using first sentence as fallback`);
-          sentence = question.sentences[0];
-        }
-        
-        if (sentence) {
-          console.log(`Found sentence: "${sentence.text}" with correct answer: "${sentence.answer}"`);
-          
-          // Compare the user's answer with the correct answer (case insensitive, trimmed)
+        if (sentence && sentence.answer) {
           const normalizedUserAnswer = answer.answer.toLowerCase().trim();
           const normalizedCorrectAnswer = sentence.answer.toLowerCase().trim();
           
-          console.log(`Comparing answers: "${normalizedUserAnswer}" vs "${normalizedCorrectAnswer}"`);
           isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
-          
-          console.log(`Answer is correct: ${isCorrect}`);
-        } else {
-          console.log(`No sentence found for this answer`);
         }
-      }
-      else if (isMatching) {
-        // For matching questions, the answer format would need to be an object mapping terms to translations
-        // This is a simplified example
-        isCorrect = true; // Placeholder - implement actual matching logic
+      } else if (isMatching && question.matchItems) {
+        // For matching questions
+        const matchItem = question.matchItems.find((item: any) => String(item.id) === String(answer.questionId));
+        
+        if (matchItem && matchItem.translation) {
+          const normalizedUserAnswer = answer.answer.toLowerCase().trim();
+          const normalizedCorrectAnswer = matchItem.translation.toLowerCase().trim();
+          
+          isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+        }
       }
       
       if (isCorrect) {
         score++;
       }
-      
-      // Store the answer in the database (optional)
-      // This step would allow you to later show which answers were right/wrong
-      try {
-        await pool.query(`
-          INSERT INTO assessment_answers (
-            id, attempt_id, question_id, answer_text, is_correct
-          )
-          VALUES ($1, $2, $3, $4, $5)
-        `, [uuidv4(), attemptId, answer.questionId, answer.answer, isCorrect]);
-      } catch (err) {
-        console.error('Error storing answer:', err);
-        // Continue even if storing the answer fails
-      }
     }
     
-    // Calculate percentage score
-    const scorePercentage = Math.round((score / totalQuestions) * 100);
-    
-    // Update attempt score
+    // Update the attempt with the score and completion time
     const now = new Date().toISOString();
+    const scorePercentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+    
     await pool.query(`
       UPDATE assessment_attempts
-      SET score = $1, completed_at = $2
+      SET completed_at = $1, score = $2
       WHERE id = $3
-    `, [scorePercentage, now, attemptId]);
+    `, [now, scorePercentage, attemptId]);
     
     res.status(200).json({
       score: scorePercentage,

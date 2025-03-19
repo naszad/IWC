@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV WDS_SOCKET_PORT=0
+ENV WATCHPACK_POLLING=true 
+ENV FAST_REFRESH=true
+
+# Copy the rest of the app
+COPY . .
+
+# Expose port for development server
+EXPOSE 3000
+
+# Start the development server with hot reloading
+CMD ["npm", "start"]
