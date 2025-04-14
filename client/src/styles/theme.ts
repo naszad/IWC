@@ -370,6 +370,6 @@ export const darkTheme: ThemeOptions = {
 };
 
 // Create the default theme (light)
-const theme = createTheme(darkTheme);
+const theme = createTheme(lightTheme);
 
 export default theme;
