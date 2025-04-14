@@ -140,6 +140,25 @@ const TakeAssessment = () => {
     try {
       setSubmitting(true);
       
+      // Log the current questions and the active question for debugging
+      console.log('Assessment questions:', questions);
+      
+      // Extract correctAnswer if available from the questions for debugging
+      const questionDebugInfo = questions.map((q: any) => {
+        let correctAnswer = '';
+        if (q.questions && q.questions[0] && q.questions[0].correctAnswer) {
+          correctAnswer = q.questions[0].correctAnswer;
+        }
+        return {
+          id: q.id,
+          type: q.type,
+          title: q.title || q.question_text,
+          correctAnswer
+        };
+      });
+      
+      console.log('Question debug info:', questionDebugInfo);
+      
       // Format answers for API submission
       const formattedAnswers: Array<{ questionId: string; answer: string }> = [];
       
@@ -147,12 +166,14 @@ const TakeAssessment = () => {
       Object.entries(userAnswers).forEach(([answerId, answer]) => {
         // Check if this is a fill-in-blank answer with format "questionId-sentenceId"
         if (answerId.includes('-')) {
-          const [_, sentenceId] = answerId.split('-');
+          const [questionId, sentenceId] = answerId.split('-');
+          // For fill-in-blank questions, we submit each sentence answer separately
           formattedAnswers.push({
-            questionId: sentenceId,
+            questionId: sentenceId, // Use sentence ID as the question ID
             answer
           });
         } else {
+          // Regular question answer
           formattedAnswers.push({
             questionId: answerId,
             answer
@@ -160,8 +181,12 @@ const TakeAssessment = () => {
         }
       });
       
+      console.log('Submitting assessment attempt:', attempt.attemptId);
+      console.log('Formatted answers:', formattedAnswers);
+      
       // Submit answers to the API
       const result = await submitAssessment(attempt.attemptId, formattedAnswers);
+      console.log('Submission result:', result);
       
       // Store the attempt ID in localStorage so it can be retrieved in the results page
       localStorage.setItem(`lastAttempt-${id}`, attempt.attemptId);
