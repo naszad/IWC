@@ -18,6 +18,9 @@ dist
 .env.test.local
 .env.production.local
 uploads
+file_uploads/*
+postgres_data
+postgres_data/*
 
 npm-debug.log*
 yarn-debug.log*

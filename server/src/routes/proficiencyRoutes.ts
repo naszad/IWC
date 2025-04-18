@@ -29,9 +29,6 @@ const catchAsync = (fn: any): RequestHandler => {
 
 // Get proficiency data
 router.get('/user/:userId', catchAsync(getProficiencyData));
-router.get('/user/:userId/language/:language', catchAsync(getProficiencyData));
-router.get('/profile', catchAsync(getProficiencyData)); // Get current logged-in user's data
-
 // Record new data
 router.post('/assessment', catchAsync(recordAssessment));
 router.post('/activity', catchAsync(recordActivity));

@@ -171,35 +171,32 @@ const ProficiencyTracking = () => {
 
   // Fetch proficiency data when component mounts
   useEffect(() => {
+    if (!user) return;
     const fetchProficiencyData = async () => {
       try {
         setLoading(true);
-        const data = await getUserProficiencyData();
+        const data = await getUserProficiencyData(user.id);
         setProficiencyData(data);
         setError(null);
       } catch (err: any) {
         console.error('Failed to fetch proficiency data:', err);
-        
-        // Check if this is a 404 error (no data found)
+        // Handle case with no data
         if (err.response && err.response.status === 404) {
-          // Set proficiencyData to an empty state instead of showing an error
           setProficiencyData({
-            userId: user?.id || 0,
-            username: user?.username || '',
+            userId: user.id,
+            username: user.username || '',
             languages: []
           });
           setError(null);
         } else {
-          // For other errors, show an error message
           setError('Failed to load proficiency data. Please try again later.');
         }
       } finally {
         setLoading(false);
       }
     };
-    
     fetchProficiencyData();
-  }, []);
+  }, [user]);
 
   const handleSkillTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSkillTabValue(newValue);

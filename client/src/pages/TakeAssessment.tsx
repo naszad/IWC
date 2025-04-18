@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent, ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -20,6 +20,9 @@ import {
   Card,
   CardContent,
   Alert,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -226,13 +229,13 @@ const TakeAssessment = () => {
     );
   }
 
-  const questions = assessment.questions || [];
+  const questions = attempt ? attempt.assessment.questions : (assessment?.questions || []);
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 8 }}>
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h4" gutterBottom>{assessment.title}</Typography>
-        <Typography variant="body1" paragraph>{assessment.description}</Typography>
+        <Typography variant="h4" gutterBottom>{attempt ? attempt.assessment.title : assessment?.title}</Typography>
+        <Typography variant="body1" paragraph>{attempt ? attempt.assessment.description : assessment?.description}</Typography>
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
           <Typography variant="subtitle1">
@@ -284,7 +287,7 @@ const TakeAssessment = () => {
                   <FormControl component="fieldset" sx={{ width: '100%', mt: 2 }}>
                     <RadioGroup
                       value={userAnswers[questions[activeStep].id] || ''}
-                      onChange={(e) => handleAnswerChange(questions[activeStep].id, e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>, value: string) => handleAnswerChange(questions[activeStep].id, value)}
                     >
                       {(questions[activeStep].questions?.[0]?.options || questions[activeStep].options || []).map((option: string, idx: number) => {
                         console.log(`Rendering option: ${option}`);
@@ -318,7 +321,7 @@ const TakeAssessment = () => {
                               label="Your answer"
                               variant="outlined"
                               value={userAnswers[`${questions[activeStep].id}-${sentence.id}`] || ''}
-                              onChange={(e) => handleAnswerChange(`${questions[activeStep].id}-${sentence.id}`, e.target.value)}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => handleAnswerChange(`${questions[activeStep].id}-${sentence.id}`, e.target.value)}
                             />
                           </Box>
                         ))}
@@ -330,7 +333,7 @@ const TakeAssessment = () => {
                         multiline
                         rows={4}
                         value={userAnswers[questions[activeStep].id] || ''}
-                        onChange={(e) => handleAnswerChange(questions[activeStep].id, e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleAnswerChange(questions[activeStep].id, e.target.value)}
                         placeholder="Type your answer here..."
                         variant="outlined"
                       />
@@ -338,7 +341,44 @@ const TakeAssessment = () => {
                   </Box>
                 )}
                 
-                {/* Add handlers for other question types - matching, flashcards, etc. */}
+                {/* Matching question UI */}
+                {questions[activeStep].type === 'matching' && questions[activeStep].matchItems && (
+                  <Box sx={{ mt: 2 }}>
+                    {questions[activeStep].matchItems.map((item: { id: string; term: string; translation: string }) => (
+                      <Box key={item.id} sx={{ mb: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 1 }}>{item.term}</Typography>
+                        <Select
+                          fullWidth
+                          value={userAnswers[item.id] || ''}
+                          onChange={(e: SelectChangeEvent<string>, child: ReactNode) => handleAnswerChange(item.id, e.target.value)}
+                        >
+                          {questions[activeStep].matchItems.map((mi: { id: string; term: string; translation: string }) => (
+                            <MenuItem key={mi.id} value={mi.translation}>{mi.translation}</MenuItem>
+                          ))}
+                        </Select>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+
+                {/* Flashcards question UI */}
+                {questions[activeStep].type === 'flashcards' && questions[activeStep].words && (
+                  <Box sx={{ mt: 2 }}>
+                    {questions[activeStep].words.map((word: { id: string; term: string; translation: string; example?: string }) => (
+                      <Box key={word.id} sx={{ mb: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 1 }}>{word.term}</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Your answer"
+                          variant="outlined"
+                          value={userAnswers[word.id] || ''}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => handleAnswerChange(word.id, e.target.value)}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </CardContent>
             </Card>
           )}

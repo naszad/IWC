@@ -32,11 +32,20 @@ export const getProficiencyData = async (req: ProficiencyRequest, res: Response)
     const languageParams = language ? [userId, language] : [userId];
     const languagesResult = await pool.query(languagesQuery, languageParams);
     
+    // If no languages found, return empty array instead of 404
     if (languagesResult.rows.length === 0) {
-      return res.status(404).json({ 
-        error: language 
-          ? `User is not learning ${language}` 
-          : 'User is not learning any languages' 
+      // If a specific language was requested, return 404
+      if (language) {
+        return res.status(404).json({ 
+          error: `User is not learning ${language}`
+        });
+      }
+      
+      // Otherwise return empty languages array
+      return res.status(200).json({
+        userId: user.id,
+        username: user.username,
+        languages: []
       });
     }
     

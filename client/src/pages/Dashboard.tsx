@@ -111,13 +111,13 @@ const Dashboard = () => {
       
       try {
         setProficiencyLoading(true);
-        const data = await getUserProficiencyData();
+        const data = await getUserProficiencyData(user.id);
         setProficiencyData(data);
         setProficiencyError(null);
       } catch (err: any) {
         console.error('Failed to fetch proficiency data:', err);
         
-        // Check if this is a 404 error (no data found)
+        // Check if this is a 404 error (no data found yet)
         if (err.response && err.response.status === 404) {
           // Set proficiencyData to an empty state instead of showing an error
           setProficiencyData({

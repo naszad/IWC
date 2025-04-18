@@ -766,6 +766,8 @@ export const getUserAttempts = async (req: AuthRequest, res: Response) => {
       userId: row.user_id,
       startedAt: row.started_at,
       completedAt: row.completed_at,
+      // Compute time spent in seconds
+      timeSpent: row.completed_at && row.started_at ? Math.floor((new Date(row.completed_at).getTime() - new Date(row.started_at).getTime()) / 1000) : 0,
       score: row.score,
       assessment: {
         id: row.assessment_id,
@@ -798,7 +800,7 @@ export const getAssessmentResults = async (req: AuthRequest, res: Response) => {
     
     // Get the attempt and check if it belongs to the user
     const attemptResult = await pool.query(`
-      SELECT aa.*, a.title as assessment_title
+      SELECT aa.*, a.title as assessment_title, a.category as assessment_category
       FROM assessment_attempts aa
       JOIN assessments a ON aa.assessment_id = a.id
       WHERE aa.id = $1 AND aa.user_id = $2
@@ -883,25 +885,26 @@ export const getAssessmentResults = async (req: AuthRequest, res: Response) => {
       })
     );
     
-    // Calculate proficiency changes (mock data for now)
-    const proficiency_changes = {
-      vocabulary: 2,
-      grammar: 1,
-      overall: 2
+    // Calculate dynamic proficiency changes and recommendations
+    const totalQuestions = questions.length;
+    const correctAnswers = questions.filter(q => q.is_correct).length;
+    const scorePercentage = attempt.score;
+    const categoryKey = attempt.assessment_category || 'overall';
+    const proficiency_changes: { [key: string]: number } = {
+      [categoryKey]: scorePercentage,
+      overall: scorePercentage
     };
-    
-    // Generate recommendations based on performance
-    const recommendations = [
-      'Continue practicing with more assessments',
-      'Review incorrect answers to improve understanding'
-    ];
-    
+    // Generate recommendations
+    const recommendations: string[] = [];
+    if (correctAnswers === totalQuestions) {
+      recommendations.push('Excellent! You answered all questions correctly.');
+    } else {
+      recommendations.push(`You answered ${correctAnswers}/${totalQuestions} questions correctly.`);
+      recommendations.push('Review incorrect answers to improve understanding.');
+    }
+
     // Return the formatted results
-    res.status(200).json({
-      questions,
-      proficiency_changes,
-      recommendations
-    });
+    res.status(200).json({ questions, proficiency_changes, recommendations });
   } catch (error) {
     console.error(`Error getting assessment results for attempt ${req.params.attemptId}:`, error);
     res.status(500).json({ error: 'Failed to get assessment results' });
