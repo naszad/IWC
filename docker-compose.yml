@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   nginx:
     image: nginx:alpine
     container_name: iwc-nginx-proxy
     ports:
-      - "${CLIENT_PORT}:80"
+      - "${CLIENT_PORT:-80}:80"
     volumes:
       - ./client/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -14,15 +12,14 @@ services:
     restart: always
 
   client:
-    env_file:
-      - ./client/.env
     build:
       context: ./client
+      dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3001/api}
+        VITE_API_URL: ${VITE_API_URL:-http://server:5000/api}
     image: iwc-learning-client:latest
-    ports:
-      - "${CLIENT_PORT:-80}:80"
+    expose:
+      - "80"
     restart: always
     depends_on:
       - server
@@ -32,6 +29,7 @@ services:
       - ./server/.env
     build:
       context: ./server
+      dockerfile: Dockerfile
     image: iwc-learning-server:latest
     ports:
       - "${PORT:-5000}:5000"
@@ -41,19 +39,15 @@ services:
     restart: always
     healthcheck:
       test: ["CMD-SHELL","curl -f http://localhost:${PORT:-5000}/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   db:
     image: postgres:15-alpine
     container_name: iwc-db
     restart: always
     environment:
-      - POSTGRES_DB=${DB_NAME:-appdb}
-      - POSTGRES_USER=${DB_USER:-youruser}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-yourpass}
+      - POSTGRES_DB=${DB_NAME:-iwcdb}
+      - POSTGRES_USER=${DB_USER:-dbuser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-dbpass}
       - POSTGRES_SHARED_BUFFERS=128MB
       - POSTGRES_EFFECTIVE_CACHE_SIZE=384MB
       - POSTGRES_WORK_MEM=16MB
@@ -63,7 +57,37 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U ${DB_USER:-youruser}"]
+      test: ["CMD-SHELL","pg_isready -U ${DB_USER:-dbuser}"]
+
+  test-db:
+    image: postgres:15-alpine
+    container_name: iwc-test-db
+    environment:
+      - POSTGRES_DB=${TEST_DB_NAME:-iwcdb_test}
+      - POSTGRES_USER=${TEST_DB_USER:-testuser}
+      - POSTGRES_PASSWORD=${TEST_DB_PASSWORD:-testpass}
+    ports:
+      - "${TEST_DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${TEST_DB_USER:-testuser}"]
+
+  test:
+    profiles: ["testing"]
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: builder
+    image: iwc-learning-server-test:latest
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgres://testuser:testpass@test-db:5432/iwcdb_test
+    depends_on:
+      test-db:
+        condition: service_healthy
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm test
 
 volumes:
   db_data:

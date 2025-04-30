@@ -20,8 +20,10 @@ const Assessment = sequelize.define('Assessment', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   instructor_id: { type: DataTypes.UUID, allowNull: false },
   title: { type: DataTypes.STRING(255), allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: true },
   open_at: { type: DataTypes.DATE, allowNull: false },
   close_at: { type: DataTypes.DATE, allowNull: false },
+  duration_minutes: { type: DataTypes.INTEGER, allowNull: false },
   created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   level: { type: DataTypes.ENUM('A', 'B', 'C', 'D'), allowNull: false },
   theme: { type: DataTypes.ENUM('health', 'travel', 'food', 'work', 'education'), allowNull: false },
@@ -31,11 +33,12 @@ const Assessment = sequelize.define('Assessment', {
 const Question = sequelize.define('Question', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   assessment_id: { type: DataTypes.UUID, allowNull: false },
-  type: { type: DataTypes.ENUM('multiple_choice', 'true_false', 'short_answer'), allowNull: false },
+  type: { type: DataTypes.ENUM('multiple_choice', 'essay', 'short_answer'), allowNull: false },
   prompt: { type: DataTypes.TEXT, allowNull: false },
   position: { type: DataTypes.INTEGER, allowNull: false },
-  options: { type: DataTypes.JSONB, allowNull: false },
-  correct_answer: { type: DataTypes.JSONB, allowNull: false },
+  points: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  options: { type: DataTypes.JSONB, allowNull: true },
+  correct_answer: { type: DataTypes.TEXT, allowNull: true },
 }, { tableName: 'questions', timestamps: false, underscored: true, indexes: [{ name: 'unique_position_per_assessment', unique: true, fields: ['assessment_id', 'position'] }] });
 
 // Submission model
@@ -44,6 +47,7 @@ const Submission = sequelize.define('Submission', {
   assessment_id: { type: DataTypes.UUID, allowNull: false },
   student_id: { type: DataTypes.UUID, allowNull: false },
   score: { type: DataTypes.DECIMAL, allowNull: false },
+  feedback: { type: DataTypes.TEXT, allowNull: true },
   submitted_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
 }, { tableName: 'submissions', timestamps: false, underscored: true, indexes: [{ name: 'one_submission_per_student', unique: true, fields: ['assessment_id', 'student_id'] }] });
 
@@ -52,8 +56,8 @@ const SubmissionAnswer = sequelize.define('SubmissionAnswer', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   submission_id: { type: DataTypes.UUID, allowNull: false },
   question_id: { type: DataTypes.UUID, allowNull: false },
-  answer: { type: DataTypes.JSONB, allowNull: false },
-  is_correct: { type: DataTypes.BOOLEAN, allowNull: false },
+  answer: { type: DataTypes.JSONB, allowNull: true },
+  is_correct: { type: DataTypes.BOOLEAN, allowNull: true },
 }, { tableName: 'submission_answers', timestamps: false, underscored: true });
 
 // Associations

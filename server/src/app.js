@@ -30,12 +30,26 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/auth', authRouter);
-app.use('/api', studentRouter);
+app.use('/student', studentRouter);
 app.use('/instructor', instructorRouter);
 app.use('/admin', adminRouter);
 
 // global error handler
 app.use(errorHandler);
+
+// Define a helper to normalize the port into a number, string, or false
+function normalizePort(val) {
+  const port = parseInt(val, 10);
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+  return false;
+}
 
 var port = normalizePort(config.port);
 app.set('port', port);
